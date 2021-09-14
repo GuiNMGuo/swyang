@@ -4,3 +4,7 @@ bash _script/sh/create_page.sh 创建页面
 git add .
 git commit
 git push
+
+
+
+git remote set-url origin https://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@github.com/GuiNMGuo/swyang.git
