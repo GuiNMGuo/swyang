@@ -1,52 +1,52 @@
 {
   "items": [
     {
+      "cover": "/illustrations/work1.png",
       "title": "多角度产品图生成",
       "desc": "上传一张产品原图，自动生成白底多视图电商展示图，用于商品上架与详情页配图。",
       "tags": "图像处理, 电商",
-      "cover": "/illustrations/work1.png",
-      "href": "",
-      "year": "2026"
+      "year": "2026",
+      "href": ""
     },
     {
+      "cover": "/illustrations/work2.png",
       "title": "视频水印去除",
       "desc": "在画面上框选水印或硬字幕区域，本地一键去除。不依赖 AI 模型，不上传文件，秒级完成。",
       "tags": "视频, FFmpeg",
-      "cover": "/illustrations/work2.png",
-      "href": "",
-      "year": "2026"
+      "year": "2026",
+      "href": ""
     },
     {
+      "cover": "/illustrations/work3.png",
       "title": "自动粗剪",
       "desc": "给一段素材和口播文字稿，自动完成配音、拼接、裁切、字幕烧录和背景音乐混音。",
       "tags": "视频, 自动化",
-      "cover": "/illustrations/work3.png",
-      "href": "",
-      "year": "2026"
+      "year": "2026",
+      "href": ""
     },
     {
+      "cover": "/illustrations/work4.png",
       "title": "看图复刻任务队列",
       "desc": "把短参考视频拆成 9 帧分镜，批量替换产品与场景，重新生成同结构的视频。",
       "tags": "AI, 批量处理",
-      "cover": "/illustrations/work4.png",
-      "href": "",
-      "year": "2026"
+      "year": "2026",
+      "href": ""
     },
     {
+      "cover": "/illustrations/work5.png",
       "title": "选品调研工具",
       "desc": "抓取目标市场的电商平台公开数据，对比货源成本，输出选品分析报告。",
       "tags": "数据, 调研",
-      "cover": "/illustrations/work5.png",
-      "href": "",
-      "year": "2026"
+      "year": "2026",
+      "href": ""
     },
     {
+      "cover": "/illustrations/work6.png",
       "title": "视频转深度图",
       "desc": "把普通视频转为深度视频（白模），用于空间参考和二次创作。本地推理，免费满帧率。",
       "tags": "AI, 视频",
-      "cover": "/illustrations/work6.png",
-      "href": "",
-      "year": "2026"
+      "year": "2026",
+      "href": ""
     }
   ]
 }
