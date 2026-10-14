@@ -5,11 +5,6 @@ import { SITE, WORKS, TOOLS, STATUS_LABEL } from '../lib/site';
 
 const featuredWorks = WORKS.slice(0, 3);
 const workVariants = ['work1', 'work2', 'work3', 'work4', 'work5', 'work6'] as const;
-const toolIcon: Record<string, 'tool1' | 'tool2' | 'tool3'> = {
-  'text-lab': 'tool1',
-  'image-batch': 'tool2',
-  'data-lookup': 'tool3',
-};
 ---
 
 <BaseLayout wide>
@@ -44,28 +39,43 @@ const toolIcon: Record<string, 'tool1' | 'tool2' | 'tool3'> = {
     </svg>
 
     <div class="flex flex-col items-center gap-10 sm:flex-row sm:items-center sm:gap-14">
-      <div class="relative shrink-0">
+      <div class="hero-avatar relative shrink-0">
         <div
-          class="absolute -inset-3 rounded-full"
-          style="background: radial-gradient(circle, rgba(242,214,164,.55) 0%, rgba(242,214,164,0) 70%);"
+          class="avatar-glow absolute -inset-4 rounded-full"
+          style="background: radial-gradient(circle, rgba(242,214,164,.6) 0%, rgba(242,214,164,0) 70%);"
         >
         </div>
-        <Illustration variant="avatar" size={172} class="relative" />
+        <Illustration
+          src="/illustrations/avatar.png"
+          alt="追风的头像插画"
+          variant="avatar"
+          size={180}
+          class="relative rounded-full shadow-lg"
+          style="border: 3px solid #fff;"
+        />
       </div>
 
       <div class="flex-1 text-center sm:text-left">
         <h1 class="text-[2.4rem] font-extrabold leading-[1.12] tracking-tight sm:text-[3.4rem]">
           {SITE.heroLines.map((line, i) => (
-            <span class:list={['block', i === 1 && 'text-[var(--color-ink-500)]']}>{line}</span>
+            <span
+              class:list={[
+                'hero-line block',
+                i === 1 && 'text-[var(--color-ink-500)]',
+                i === 1 && 'd1',
+              ]}
+            >
+              {line}
+            </span>
           ))}
         </h1>
 
-        <p class="mx-auto mt-6 max-w-lg text-[15.5px] leading-relaxed muted sm:mx-0 sm:text-[16.5px]">
+        <p class="hero-desc mx-auto mt-6 max-w-lg text-[15.5px] leading-relaxed muted sm:mx-0 sm:text-[16.5px]">
           {SITE.heroDesc}
         </p>
 
-        <div class="mt-9 flex flex-wrap items-center justify-center gap-3 sm:justify-start">
-          <a href="/work" class="btn-primary">
+        <div class="hero-cta mt-9 flex flex-wrap items-center justify-center gap-3 sm:justify-start">
+          <a href="/work" class="btn-primary arrow-slide">
             看看作品
             <svg
               width="15"
@@ -102,14 +112,17 @@ const toolIcon: Record<string, 'tool1' | 'tool2' | 'tool3'> = {
       >
     </div>
 
-    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    <div class="reveal-stagger grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {
         featuredWorks.map((work, i) => (
-          <article class="soft-card group flex flex-col overflow-hidden">
-            <div class="relative h-[168px] overflow-hidden" style="background-color: #F4F9F6;">
+          <article class="soft-card tilt-card group flex flex-col overflow-hidden">
+            <div class="relative h-[186px] overflow-hidden" style="background-color: #F6FAF7;">
               <Illustration
+                src={work.cover}
+                alt={`${work.title} 插画`}
                 variant={workVariants[i % workVariants.length]}
-                class="h-full w-full transition-transform duration-500 group-hover:scale-[1.04]"
+                fill
+                class="transition-transform duration-700 group-hover:scale-[1.06]"
               />
             </div>
             <div class="flex flex-1 flex-col p-6">
@@ -130,7 +143,7 @@ const toolIcon: Record<string, 'tool1' | 'tool2' | 'tool3'> = {
 
   <!-- ============ 工具 ============ -->
   <section class="pb-16 sm:pb-20">
-    <div class="mb-8">
+    <div class="reveal mb-8">
       <div class="mb-2 text-[12.5px] font-bold tracking-[0.14em]" style="color: var(--color-ink-400);">
         PLAYGROUND
       </div>
@@ -140,11 +153,17 @@ const toolIcon: Record<string, 'tool1' | 'tool2' | 'tool3'> = {
       </p>
     </div>
 
-    <div class="grid gap-5 sm:grid-cols-3">
+    <div class="reveal-stagger grid gap-5 sm:grid-cols-3">
       {
         TOOLS.map((tool) => (
-          <div class="soft-card flex flex-col p-6">
-            <Illustration variant={toolIcon[tool.slug] ?? 'tool'} size={46} />
+          <div class="soft-card tilt-card flex flex-col p-6">
+            <Illustration
+              src={tool.icon}
+              alt={`${tool.name} 插画`}
+              variant="tool"
+              size={54}
+              class="rounded-xl"
+            />
             <h3 class="mt-5 text-[15.5px] font-extrabold leading-snug">{tool.name}</h3>
             <p class="mt-2.5 flex-1 text-[13px] leading-relaxed muted">{tool.desc}</p>
             <div class="mt-5 flex items-center gap-2">
@@ -176,8 +195,22 @@ const toolIcon: Record<string, 'tool1' | 'tool2' | 'tool3'> = {
       }
     </div>
 
-    <div class="mt-8">
-      <a href="/tools" class="btn-primary">进入工具箱</a>
+    <div class="reveal mt-8">
+      <a href="/tools" class="btn-primary arrow-slide">
+        进入工具箱
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.6"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M5 12h13M13 6l6 6-6 6"></path>
+        </svg>
+      </a>
     </div>
   </section>
 </BaseLayout>

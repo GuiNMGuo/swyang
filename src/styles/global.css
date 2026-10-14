@@ -173,6 +173,22 @@
   box-shadow: 0 1px 3px rgba(13, 61, 48, 0.12);
 }
 
+/* 导航项多时收窄，避免小屏挤爆 */
+@media (max-width: 640px) {
+  .pill-nav a {
+    padding: 8px 12px;
+    font-size: 13.5px;
+  }
+  .pill-nav {
+    gap: 0;
+    padding: 4px;
+  }
+  .header-gh {
+    width: 36px !important;
+    height: 36px !important;
+  }
+}
+
 .tag {
   display: inline-flex;
   align-items: center;
@@ -225,12 +241,217 @@
   transform: translateY(-2px);
 }
 
+/* ============================================================
+   动效层
+   —— 仅在 JS 可用时启用滚动揭示，避免脚本失败导致内容不可见
+   ============================================================ */
+
+/* 滚动进入：淡入 + 上浮
+   注意：默认（无 JS / 脚本未执行）保持完全可见，避免内容永久不可见 */
+.reveal {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.75s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.js .reveal:not(.is-visible) {
+  opacity: 0;
+  transform: translateY(26px);
+  will-change: opacity, transform;
+}
+
+/* 卡片网格错开入场 */
+.reveal-stagger > * {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.js .reveal-stagger:not(.is-visible) > * {
+  opacity: 0;
+  transform: translateY(22px) scale(0.985);
+}
+
+/* 首屏入场 */
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes popIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.82) rotate(-6deg);
+  }
+  60% {
+    transform: scale(1.04) rotate(2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes floatY {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-9px);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -140% 0;
+  }
+  100% {
+    background-position: 240% 0;
+  }
+}
+
+.hero-avatar {
+  animation: popIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.hero-line {
+  animation: riseIn 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.hero-line.d1 {
+  animation-delay: 0.12s;
+}
+
+.hero-desc {
+  animation: riseIn 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.26s both;
+}
+
+.hero-cta {
+  animation: riseIn 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.38s both;
+}
+
+/* 漂浮 */
+.float-slow {
+  animation: floatY 6s ease-in-out infinite;
+}
+
+.float-mid {
+  animation: floatY 4.5s ease-in-out 0.8s infinite;
+}
+
+/* 头像柔光呼吸 */
+.avatar-glow {
+  animation: floatY 7s ease-in-out infinite;
+}
+
+/* 卡片悬停增强 */
+.tilt-card {
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.35s;
+}
+
+.tilt-card:hover {
+  transform: translateY(-6px) rotate(-0.35deg);
+}
+
+/* 按钮流光 */
+.btn-primary {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.28) 48%,
+    transparent 72%
+  );
+  background-size: 240% 100%;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.btn-primary:hover::after {
+  opacity: 1;
+  animation: shimmer 0.95s ease-out;
+}
+
+/* 箭头滑动 */
+.arrow-slide svg {
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.group:hover .arrow-slide svg,
+.arrow-slide:hover svg {
+  transform: translateX(4px);
+}
+
+/* 页脚装饰缓慢旋转 */
+.spin-slow {
+  animation: spinSlow 22s linear infinite;
+  transform-origin: center;
+}
+
+@keyframes spinSlow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 页面整体淡入 */
+@keyframes pageFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.page-fade {
+  animation: pageFade 0.5s ease-out both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
   }
-  .sparkle {
-    animation: none;
+  .sparkle,
+  .float-slow,
+  .float-mid,
+  .avatar-glow,
+  .spin-slow,
+  .hero-avatar,
+  .hero-line,
+  .hero-desc,
+  .hero-cta,
+  .page-fade {
+    animation: none !important;
+  }
+  .js .reveal:not(.is-visible),
+  .js .reveal-stagger:not(.is-visible) > * {
+    opacity: 1 !important;
+    transform: none !important;
   }
   * {
     transition-duration: 0.01ms !important;

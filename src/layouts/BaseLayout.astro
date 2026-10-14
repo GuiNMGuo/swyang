@@ -52,6 +52,10 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? SITE.url).href;
   <body class="relative flex min-h-screen flex-col">
     <div class="page-bg" aria-hidden="true"></div>
 
+    <script is:inline>
+      document.documentElement.classList.add('js');
+    </script>
+
     <a
       href="#main"
       class="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-lg focus:border focus:bg-white focus:px-4 focus:py-2 focus:text-sm"
@@ -61,12 +65,55 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? SITE.url).href;
 
     <Header />
 
-    <main id="main" class="w-full flex-1">
+    <main id="main" class="page-fade w-full flex-1">
       <div class:list={['mx-auto w-full px-5 sm:px-6', wide ? 'max-w-5xl' : 'max-w-3xl']}>
         <slot />
       </div>
     </main>
 
     <Footer />
+
+    <script>
+      function initReveal() {
+        const targets = document.querySelectorAll('.reveal, .reveal-stagger');
+        if (!targets.length) return;
+
+        const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (reduce || !('IntersectionObserver' in window)) {
+          targets.forEach((el) => el.classList.add('is-visible'));
+          return;
+        }
+
+        const io = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (!entry.isIntersecting) return;
+              const el = entry.target;
+              const group = el as HTMLElement;
+
+              if (group.classList.contains('reveal-stagger')) {
+                Array.from(group.children).forEach((child, i) => {
+                  (child as HTMLElement).style.transitionDelay = `${Math.min(i * 90, 540)}ms`;
+                });
+              }
+
+              el.classList.add('is-visible');
+              io.unobserve(el);
+            });
+          },
+          { rootMargin: '0px 0px -12% 0px', threshold: 0.08 },
+        );
+
+        targets.forEach((el) => io.observe(el));
+
+        // 兜底：2.2 秒后无论如何都显示，保证内容永远不会卡在不可见状态
+        window.setTimeout(() => {
+          targets.forEach((el) => el.classList.add('is-visible'));
+        }, 2200);
+      }
+
+      initReveal();
+      document.addEventListener('astro:after-swap', initReveal);
+    </script>
   </body>
 </html>

@@ -1,0 +1,789 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { CHAT } from '../lib/site';
+
+const config = {
+  url: CHAT.url,
+  anonKey: CHAT.anonKey,
+  bucket: CHAT.bucket,
+  table: CHAT.table,
+  maxFileMB: CHAT.maxFileMB,
+  maxMessages: CHAT.maxMessages,
+};
+---
+
+<BaseLayout title={CHAT.title} description={CHAT.subtitle} wide>
+  <section class="pb-10 pt-28 sm:pt-36">
+    <div class="reveal mb-8">
+      <div class="mb-2 text-[12.5px] font-bold tracking-[0.14em]" style="color: var(--color-ink-400);">
+        MESSAGE WALL
+      </div>
+      <h1 class="text-[1.9rem] font-extrabold tracking-tight sm:text-[2.3rem]">{CHAT.title}</h1>
+      <p class="mt-3 max-w-xl text-[14.5px] leading-relaxed muted">{CHAT.subtitle}</p>
+    </div>
+
+    {
+      !CHAT.enabled && (
+        <div class="soft-card reveal p-7 sm:p-9">
+          <div class="mb-5 flex items-center gap-3">
+            <span
+              class="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-[17px]"
+              style="background-color: #FDF0D8; color: #A15C07;"
+            >
+              ⚙
+            </span>
+            <div>
+              <h2 class="text-[16.5px] font-extrabold">留言墙还没开启</h2>
+              <p class="text-[13px] faint">按下面四步做完就可以用了，全程免费，大约 5 分钟。</p>
+            </div>
+          </div>
+
+          <ol class="ml-1 space-y-4 text-[14px] leading-relaxed" style="color: var(--text-mid);">
+            <li class="flex gap-3">
+              <span class="faint shrink-0 font-extrabold tabular-nums">01</span>
+              <span>
+                打开 <a
+                  class="font-bold underline decoration-dotted"
+                  href="https://supabase.com"
+                  target="_blank"
+                  rel="noopener">supabase.com</a
+                >，用 GitHub 账号登录，新建一个项目（New project）。<br />
+                <span class="faint text-[13px]">Region 选 Singapore，建得快也离你近。</span>
+              </span>
+            </li>
+            <li class="flex gap-3">
+              <span class="faint shrink-0 font-extrabold tabular-nums">02</span>
+              <span>
+                进去后点左侧 <b>SQL Editor</b> → New query，把后台里「留言墙」页面提供的那段建表
+                SQL 整段粘进去，点 <b>Run</b>。<br />
+                <span class="faint text-[13px]">这会建好数据表、存储桶和读写规则。</span>
+              </span>
+            </li>
+            <li class="flex gap-3">
+              <span class="faint shrink-0 font-extrabold tabular-nums">03</span>
+              <span>
+                左侧 <b>Project Settings → API</b>，复制 <b>Project URL</b> 和
+                <b>anon public</b> 两个值。
+              </span>
+            </li>
+            <li class="flex gap-3">
+              <span class="faint shrink-0 font-extrabold tabular-nums">04</span>
+              <span>
+                到 <a class="font-bold underline decoration-dotted" href="/admin">/admin</a> 后台 →
+                「留言墙」标签，把两个值填进去，「是否开启」选开启，点保存。1 分钟后这个页面就能用了。
+              </span>
+            </li>
+          </ol>
+
+          <div class="mt-7 flex flex-wrap gap-3">
+            <a href="/admin" class="btn-primary arrow-slide">
+              去后台配置
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M5 12h13M13 6l6 6-6 6"></path>
+              </svg>
+            </a>
+          </div>
+        </div>
+      )
+    }
+
+    {
+      CHAT.enabled && (
+        <>
+          <div class="soft-card reveal mb-5 flex flex-wrap items-center gap-x-6 gap-y-2 px-6 py-4">
+            <div class="flex items-center gap-2 text-[13px] font-bold" style="color: var(--color-ink-600);">
+              <span class="relative flex h-2 w-2">
+                <span
+                  class="absolute inline-flex h-full w-full animate-ping rounded-full opacity-70"
+                  style="background-color: #2A7D62;"
+                />
+                <span class="relative inline-flex h-2 w-2 rounded-full" style="background-color: #2A7D62;" />
+              </span>
+              <span id="connState">正在连接…</span>
+            </div>
+            <div class="text-[13px] faint" id="countState"></div>
+            <div class="grow" />
+            <div class="text-[12.5px] faint">单个文件最大 {CHAT.maxFileMB}MB · 只保留最新 {CHAT.maxMessages} 条</div>
+          </div>
+
+          <div class="grid gap-5 lg:grid-cols-[1fr_320px]">
+            <!-- 消息列表 -->
+            <div class="soft-card flex min-h-[420px] flex-col overflow-hidden">
+              <div
+                id="msgList"
+                class="flex flex-1 flex-col gap-4 overflow-y-auto p-5 sm:p-6"
+                style="max-height: 62vh;"
+              >
+                <div class="py-16 text-center text-[14px] faint" id="emptyState">还没有人留言，说第一句吧。</div>
+              </div>
+
+              <!-- 上传进度 -->
+              <div id="uploadBar" class="hidden border-t px-5 py-3 sm:px-6" style="border-color: var(--border);">
+                <div class="mb-2 flex items-center justify-between text-[12.5px] font-bold">
+                  <span id="uploadName" class="truncate" style="color: var(--text-mid);"></span>
+                  <span id="uploadPct" class="tabular-nums faint">0%</span>
+                </div>
+                <div class="h-1.5 w-full overflow-hidden rounded-full" style="background-color: #EDF1EE;">
+                  <div
+                    id="uploadFill"
+                    class="h-full rounded-full transition-[width] duration-200"
+                    style="width: 0%; background-color: #2A7D62;"
+                  >
+                  </div>
+                </div>
+              </div>
+
+              <!-- 输入区 -->
+              <div class="border-t p-4 sm:p-5" style="border-color: var(--border);">
+                <div id="errBox" class="mb-3 hidden rounded-xl px-4 py-3 text-[13px]" style="background-color: #FDECEB; color: #9C2B21;">
+                </div>
+
+                <div id="pendingPreview" class="mb-3 hidden flex-wrap gap-2"></div>
+
+                <div class="flex items-end gap-3">
+                  <input
+                    id="nick"
+                    type="text"
+                    maxlength="16"
+                    placeholder="昵称"
+                    class="w-[92px] shrink-0 rounded-xl px-3 py-2.5 text-[13.5px] font-semibold outline-none transition-colors sm:w-[110px]"
+                    style="background-color: #FBF9F4; border: 1px solid var(--border); color: var(--text);"
+                  />
+                  <textarea
+                    id="body"
+                    rows="1"
+                    placeholder="说点什么…（Enter 发送，Shift+Enter 换行）"
+                    class="flex-1 resize-none rounded-xl px-3.5 py-2.5 text-[14px] leading-relaxed outline-none transition-colors"
+                    style="background-color: #FBF9F4; border: 1px solid var(--border); color: var(--text); max-height: 132px;"
+                  ></textarea>
+                  <button
+                    id="attachBtn"
+                    type="button"
+                    aria-label="选择文件"
+                    title={`上传图片 / 视频 / 文件（≤ ${CHAT.maxFileMB}MB）`}
+                    class="grid h-10 w-10 shrink-0 place-items-center rounded-full transition-all hover:-translate-y-0.5"
+                    style="background-color: #EEF7F2; border: 1px solid #DCEEDE; color: var(--color-ink-600);"
+                  >
+                    <svg
+                      width="17"
+                      height="17"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M21.4 11.05 12.25 20.2a5.5 5.5 0 0 1-7.78-7.78l9.2-9.19a3.67 3.67 0 1 1 5.19 5.19l-9.2 9.19a1.83 1.83 0 0 1-2.59-2.59l8.5-8.49"></path>
+                    </svg>
+                  </button>
+                  <button id="sendBtn" type="button" class="btn-primary shrink-0 px-6 py-2.5 text-[14.5px]" style="border-radius: 12px;">
+                    发送
+                  </button>
+                </div>
+                <input id="fileInput" type="file" class="hidden" multiple />
+                <p class="mt-2.5 text-[12px] faint">
+                  留言是公开的，别发隐私内容。附件存在你自己的 Supabase 免费空间里。
+                </p>
+              </div>
+            </div>
+
+            <!-- 侧栏提示 -->
+            <aside class="reveal space-y-4">
+              <div class="soft-card p-5">
+                <h3 class="mb-3 text-[14px] font-extrabold">能传什么</h3>
+                <ul class="space-y-2.5 text-[13px] leading-relaxed" style="color: var(--text-mid);">
+                  <li>📝 纯文字留言</li>
+                  <li>🖼 图片，点开可放大看</li>
+                  <li>🎬 视频，直接在墙里播放</li>
+                  <li>📎 其他文件，点一下下载</li>
+                </ul>
+              </div>
+              <div class="soft-card p-5">
+                <h3 class="mb-3 text-[14px] font-extrabold">关于数量</h3>
+                <p class="text-[13px] leading-relaxed" style="color: var(--text-mid);">
+                  墙上永远只留最新 {CHAT.maxMessages} 条。发新的时，最早那条会连同它的附件一起自动清掉，不用手动管理。
+                </p>
+              </div>
+              <div class="soft-card p-5">
+                <h3 class="mb-3 text-[14px] font-extrabold">空间够用吗</h3>
+                <p class="text-[13px] leading-relaxed" style="color: var(--text-mid);">
+                  Supabase 免费版给 1GB 存储。放图片很宽裕；{CHAT.maxFileMB}MB
+                  的完整视频大概能放二三十个，超了在 Supabase 后台删几个就行。
+                </p>
+              </div>
+            </aside>
+          </div>
+
+          <script type="application/json" id="chat-config" set:html={JSON.stringify(config)} />
+          <script is:inline>
+            (function () {
+              var cfg = JSON.parse(document.getElementById('chat-config').textContent);
+              var base = cfg.url;
+              var headers = { apikey: cfg.anonKey, Authorization: 'Bearer ' + cfg.anonKey };
+              var seen = {};
+              var pending = [];      // 待发送的附件
+              var sending = false;
+              var polling = null;
+
+              var $ = function (id) {
+                return document.getElementById(id);
+              };
+              var list = $('msgList');
+              var empty = $('emptyState');
+
+              function esc(s) {
+                return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+                  return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+                });
+              }
+
+              function fmtSize(b) {
+                if (!b) return '';
+                if (b < 1024) return b + ' B';
+                if (b < 1048576) return (b / 1024).toFixed(0) + ' KB';
+                return (b / 1048576).toFixed(1) + ' MB';
+              }
+
+              function fmtTime(t) {
+                var d = new Date(t);
+                var diff = (Date.now() - d.getTime()) / 1000;
+                if (diff < 60) return '刚刚';
+                if (diff < 3600) return Math.floor(diff / 60) + ' 分钟前';
+                if (diff < 86400) return Math.floor(diff / 3600) + ' 小时前';
+                if (diff < 604800) return Math.floor(diff / 86400) + ' 天前';
+                return (
+                  d.getFullYear() +
+                  '/' +
+                  String(d.getMonth() + 1).padStart(2, '0') +
+                  '/' +
+                  String(d.getDate()).padStart(2, '0') +
+                  ' ' +
+                  String(d.getHours()).padStart(2, '0') +
+                  ':' +
+                  String(d.getMinutes()).padStart(2, '0')
+                );
+              }
+
+              function showErr(t) {
+                var b = $('errBox');
+                if (!t) {
+                  b.classList.add('hidden');
+                  return;
+                }
+                b.textContent = t;
+                b.classList.remove('hidden');
+              }
+
+              function setConn(text, color) {
+                $('connState').textContent = text;
+                var dot = $('connState').parentNode.querySelectorAll('span')[1];
+                if (dot) dot.style.backgroundColor = color;
+              }
+
+              /* ---------- 渲染一条消息 ---------- */
+              function render(m) {
+                var mine = m.nickname && m.nickname === ($('nick').value.trim() || '');
+                var wrap = document.createElement('div');
+                wrap.className = 'flex gap-3';
+                wrap.style.flexDirection = mine ? 'row-reverse' : 'row';
+                wrap.dataset.id = m.id;
+
+                var initial = (m.nickname || '访').trim().charAt(0) || '访';
+                var avatar =
+                  '<div class="grid h-9 w-9 shrink-0 place-items-center rounded-full text-[13px] font-extrabold text-white" style="background-color: ' +
+                  (mine ? '#2A7D62' : '#479B7D') +
+                  ';">' +
+                  esc(initial) +
+                  '</div>';
+
+                var attach = '';
+                if (m.kind === 'image' && m.file_url) {
+                  attach =
+                    '<img src="' +
+                    esc(m.file_url) +
+                    '" alt="' +
+                    esc(m.file_name || '图片') +
+                    '" loading="lazy" class="mt-2 max-h-[320px] w-full cursor-zoom-in rounded-xl object-cover" data-zoom="' +
+                    esc(m.file_url) +
+                    '" style="border: 1px solid var(--border);" />';
+                } else if (m.kind === 'video' && m.file_url) {
+                  attach =
+                    '<video src="' +
+                    esc(m.file_url) +
+                    '" controls preload="metadata" class="mt-2 w-full rounded-xl" style="max-height: 340px; background:#0D3D30;"></video>';
+                } else if (m.file_url) {
+                  attach =
+                    '<a href="' +
+                    esc(m.file_url) +
+                    '" target="_blank" rel="noopener" download class="mt-2 flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-[13px] font-bold transition-colors" style="background-color: rgba(255,255,255,.7); border: 1px solid var(--border); color: var(--color-ink-600);">' +
+                    '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>' +
+                    '<span class="truncate">' +
+                    esc(m.file_name || '下载文件') +
+                    '</span>' +
+                    '<span class="faint shrink-0 font-semibold">' +
+                    fmtSize(m.file_size) +
+                    '</span></a>';
+                }
+
+                var bubbleBg = mine ? '#134E3D' : '#FFFFFF';
+                var bubbleColor = mine ? '#FFFFFF' : 'var(--text)';
+                var bubbleBorder = mine ? 'transparent' : 'var(--border)';
+
+                wrap.innerHTML =
+                  avatar +
+                  '<div style="max-width: min(78%, 460px); text-align: ' +
+                  (mine ? 'right' : 'left') +
+                  ';">' +
+                  '<div class="flex items-center gap-2 text-[12px] font-bold" style="' +
+                  (mine ? 'justify-content: flex-end;' : '') +
+                  'color: var(--text-soft);">' +
+                  '<span>' +
+                  esc(m.nickname || '访客') +
+                  '</span><span class="faint font-semibold">' +
+                  fmtTime(m.created_at) +
+                  '</span>' +
+                  '</div>' +
+                  '<div class="mt-1.5 inline-block px-4 py-2.5 text-[14px] leading-relaxed" style="background-color: ' +
+                  bubbleBg +
+                  '; color: ' +
+                  bubbleColor +
+                  '; border: 1px solid ' +
+                  bubbleBorder +
+                  '; border-radius: 16px; text-align: left; word-break: break-word; box-shadow: var(--shadow-sm);">' +
+                  (m.body ? esc(m.body).replace(/\n/g, '<br />') : '') +
+                  attach +
+                  '</div>' +
+                  '</div>';
+
+                return wrap;
+              }
+
+              function addMsg(m, prepend) {
+                if (seen[m.id]) return;
+                seen[m.id] = true;
+                if (empty) empty.style.display = 'none';
+                var el = render(m);
+                if (prepend) list.insertBefore(el, list.firstChild);
+                else list.appendChild(el);
+              }
+
+              /* ---------- 拉取 ---------- */
+              async function fetchAll(silent) {
+                var q =
+                  base +
+                  '/rest/v1/' +
+                  cfg.table +
+                  '?select=*&order=created_at.desc&limit=' +
+                  cfg.maxMessages;
+                var r = await fetch(q, { headers: headers });
+                if (!r.ok) throw new Error('读取留言失败（HTTP ' + r.status + '）');
+                var rows = await r.json();
+                if (!silent) {
+                  Array.prototype.forEach.call(list.querySelectorAll('[data-id]'), function (n) {
+                    n.remove();
+                  });
+                  seen = {};
+                  if (empty) empty.style.display = rows.length ? 'none' : 'block';
+                }
+                // 从旧到新插入，保证阅读顺序自然
+                for (var i = rows.length - 1; i >= 0; i--) addMsg(rows[i], false);
+                $('countState').textContent = '现有 ' + rows.length + ' / ' + cfg.maxMessages + ' 条';
+                setConn('已连接', '#2A7D62');
+                return rows;
+              }
+
+              /* ---------- 上传附件 ---------- */
+              function extOf(name) {
+                var m = /\.([a-z0-9]+)$/i.exec(name || '');
+                return m ? m[1].toLowerCase() : 'bin';
+              }
+
+              function kindOf(type, name) {
+                if (/^image\//.test(type)) return 'image';
+                if (/^video\//.test(type)) return 'video';
+                return 'file';
+              }
+
+              async function upload(file) {
+                var safe = (file.name || 'file')
+                  .replace(/\.[^.]+$/, '')
+                  .replace(/[^a-zA-Z0-9\u4e00-\u9fa5-]/g, '-')
+                  .slice(0, 40);
+                var path =
+                  new Date().toISOString().slice(0, 7) +
+                  '/' +
+                  Date.now() +
+                  '-' +
+                  Math.random().toString(36).slice(2, 7) +
+                  '-' +
+                  safe +
+                  '.' +
+                  extOf(file.name);
+
+                $('uploadBar').classList.remove('hidden');
+                $('uploadName').textContent = file.name;
+                $('uploadFill').style.width = '0%';
+                $('uploadPct').textContent = '0%';
+
+                await new Promise(function (resolve, reject) {
+                  var xhr = new XMLHttpRequest();
+                  xhr.open('POST', base + '/storage/v1/object/' + cfg.bucket + '/' + path);
+                  xhr.setRequestHeader('apikey', cfg.anonKey);
+                  xhr.setRequestHeader('Authorization', 'Bearer ' + cfg.anonKey);
+                  xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+                  xhr.upload.onprogress = function (e) {
+                    if (!e.lengthComputable) return;
+                    var p = Math.round((e.loaded / e.total) * 100);
+                    $('uploadFill').style.width = p + '%';
+                    $('uploadPct').textContent = p + '%';
+                  };
+                  xhr.onload = function () {
+                    if (xhr.status >= 200 && xhr.status < 300) resolve();
+                    else
+                      reject(
+                        new Error(
+                          xhr.status === 413
+                            ? '文件超过 Supabase 限制，被拒绝了。'
+                            : '上传失败（HTTP ' + xhr.status + '）：' + xhr.responseText.slice(0, 160),
+                        ),
+                      );
+                  };
+                  xhr.onerror = function () {
+                    reject(new Error('网络中断，上传失败。'));
+                  };
+                  xhr.send(file);
+                });
+
+                $('uploadFill').style.width = '100%';
+                $('uploadPct').textContent = '100%';
+                setTimeout(function () {
+                  $('uploadBar').classList.add('hidden');
+                }, 500);
+
+                return {
+                  file_url: base + '/storage/v1/object/public/' + cfg.bucket + '/' + path,
+                  file_name: file.name,
+                  file_size: file.size,
+                  file_type: file.type || '',
+                  _path: path,
+                };
+              }
+
+              /* ---------- 超量清理 ---------- */
+              async function trim() {
+                var r = await fetch(
+                  base +
+                    '/rest/v1/' +
+                    cfg.table +
+                    '?select=id,file_url,kind&order=created_at.desc&offset=' +
+                    cfg.maxMessages,
+                  { headers: headers },
+                );
+                if (!r.ok) return 0;
+                var old = await r.json();
+                if (!old.length) return 0;
+
+                var ids = old.map(function (o) {
+                  return o.id;
+                });
+                await fetch(base + '/rest/v1/' + cfg.table + '?id=in.(' + ids.join(',') + ')', {
+                  method: 'DELETE',
+                  headers: headers,
+                });
+
+                // 顺手把附件从存储里删掉，避免空间白占
+                var paths = old
+                  .filter(function (o) {
+                    return o.file_url;
+                  })
+                  .map(function (o) {
+                    var i = o.file_url.indexOf('/' + cfg.bucket + '/');
+                    return i < 0 ? '' : o.file_url.slice(i + cfg.bucket.length + 2);
+                  })
+                  .filter(Boolean);
+                if (paths.length) {
+                  await fetch(base + '/storage/v1/object/' + cfg.bucket, {
+                    method: 'DELETE',
+                    headers: Object.assign({ 'Content-Type': 'application/json' }, headers),
+                    body: JSON.stringify({ prefixes: paths }),
+                  });
+                }
+                return old.length;
+              }
+
+              /* ---------- 发送 ---------- */
+              async function send() {
+                if (sending) return;
+                var text = $('body').value.trim();
+                if (!text && !pending.length) return;
+
+                sending = true;
+                $('sendBtn').disabled = true;
+                $('sendBtn').textContent = '发送中';
+                showErr('');
+
+                var nick = $('nick').value.trim() || '访客';
+                localStorage.setItem('ysw_chat_nick', nick);
+
+                try {
+                  var payloads = [];
+                  if (pending.length) {
+                    for (var i = 0; i < pending.length; i++) {
+                      var up = await upload(pending[i]);
+                      payloads.push({
+                        nickname: nick,
+                        body: i === 0 ? text : '',
+                        kind: kindOf(up.file_type, up.file_name),
+                        file_url: up.file_url,
+                        file_name: up.file_name,
+                        file_size: up.file_size,
+                        file_type: up.file_type,
+                      });
+                    }
+                  } else {
+                    payloads.push({ nickname: nick, body: text, kind: 'text' });
+                  }
+
+                  var r = await fetch(base + '/rest/v1/' + cfg.table, {
+                    method: 'POST',
+                    headers: Object.assign({ 'Content-Type': 'application/json', Prefer: 'return=representation' }, headers),
+                    body: JSON.stringify(payloads),
+                  });
+                  if (!r.ok) {
+                    var t = await r.text();
+                    throw new Error('发送失败（HTTP ' + r.status + '）：' + t.slice(0, 180));
+                  }
+                  var rows = await r.json();
+                  rows.forEach(function (m) {
+                    addMsg(m, false);
+                  });
+
+                  $('body').value = '';
+                  $('body').style.height = 'auto';
+                  pending = [];
+                  drawPending();
+
+                  var removed = await trim();
+                  if (removed) await fetchAll(true);
+                  await fetchAll(true);
+                  list.scrollTop = list.scrollHeight;
+                } catch (e) {
+                  showErr(e.message);
+                } finally {
+                  sending = false;
+                  $('sendBtn').disabled = false;
+                  $('sendBtn').textContent = '发送';
+                }
+              }
+
+              /* ---------- 待发送附件预览 ---------- */
+              function drawPending() {
+                var box = $('pendingPreview');
+                box.innerHTML = '';
+                if (!pending.length) {
+                  box.classList.add('hidden');
+                  return;
+                }
+                box.classList.remove('hidden');
+                box.className = 'mb-3 flex flex-wrap gap-2';
+                pending.forEach(function (f, i) {
+                  var chip = document.createElement('div');
+                  chip.className =
+                    'flex items-center gap-2 rounded-xl px-3 py-2 text-[12.5px] font-bold';
+                  chip.style.cssText =
+                    'background-color: #EEF7F2; border: 1px solid #DCEEDE; color: var(--color-ink-600);';
+                  chip.innerHTML =
+                    '<span class="max-w-[180px] truncate">' +
+                    esc(f.name) +
+                    '</span><span class="faint font-semibold">' +
+                    fmtSize(f.size) +
+                    '</span>';
+                  var x = document.createElement('button');
+                  x.type = 'button';
+                  x.textContent = '✕';
+                  x.style.cssText = 'color: var(--text-soft); font-weight: 800; cursor: pointer;';
+                  x.onclick = function () {
+                    pending.splice(i, 1);
+                    drawPending();
+                  };
+                  chip.appendChild(x);
+                  box.appendChild(chip);
+                });
+              }
+
+              /* ---------- 事件绑定 ---------- */
+              var nickSaved = localStorage.getItem('ysw_chat_nick');
+              if (nickSaved) $('nick').value = nickSaved;
+
+              $('sendBtn').addEventListener('click', send);
+              $('body').addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  send();
+                }
+              });
+              $('body').addEventListener('input', function () {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 132) + 'px';
+              });
+
+              $('attachBtn').addEventListener('click', function () {
+                $('fileInput').click();
+              });
+
+              $('fileInput').addEventListener('change', function () {
+                var fs = Array.prototype.slice.call(this.files || []);
+                var over = fs.filter(function (f) {
+                  return f.size > cfg.maxFileMB * 1048576;
+                });
+                if (over.length) {
+                  showErr(
+                    over
+                      .map(function (f) {
+                        return f.name + '（' + fmtSize(f.size) + '）';
+                      })
+                      .join('、') +
+                      ' 超过了 ' +
+                      cfg.maxFileMB +
+                      'MB 上限，请换小一点的。',
+                  );
+                  fs = fs.filter(function (f) {
+                    return f.size <= cfg.maxFileMB * 1048576;
+                  });
+                }
+                pending = pending.concat(fs).slice(0, 5);
+                drawPending();
+                this.value = '';
+              });
+
+              // 图片点击放大
+              list.addEventListener('click', function (e) {
+                var z = e.target.closest('[data-zoom]');
+                if (!z) return;
+                var mask = document.createElement('div');
+                mask.style.cssText =
+                  'position:fixed;inset:0;z-index:99;background:rgba(8,42,33,.9);display:grid;place-items:center;padding:24px;cursor:zoom-out;';
+                var img = document.createElement('img');
+                img.src = z.getAttribute('data-zoom');
+                img.style.cssText = 'max-width:100%;max-height:100%;border-radius:14px;';
+                mask.appendChild(img);
+                mask.onclick = function () {
+                  mask.remove();
+                };
+                document.body.appendChild(mask);
+              });
+
+              /* ---------- 实时订阅（带轮询兜底） ---------- */
+              function startPolling() {
+                if (polling) return;
+                polling = setInterval(function () {
+                  fetchAll(true).catch(function () {});
+                }, 5000);
+              }
+
+              function startRealtime() {
+                try {
+                  var wsUrl =
+                    base.replace('https://', 'wss://') +
+                    '/realtime/v1/websocket?apikey=' +
+                    encodeURIComponent(cfg.anonKey) +
+                    '&vsn=1.0.0';
+                  var ws = new WebSocket(wsUrl);
+                  var hb = null;
+                  var ref = 1;
+                  var topic = 'realtime:public:' + cfg.table;
+
+                  ws.onopen = function () {
+                    ws.send(
+                      JSON.stringify({
+                        topic: topic,
+                        event: 'phx_join',
+                        payload: {
+                          config: {
+                            broadcast: { self: false },
+                            presence: { key: '' },
+                            postgres_changes: [
+                              { event: 'INSERT', schema: 'public', table: cfg.table },
+                              { event: 'DELETE', schema: 'public', table: cfg.table },
+                            ],
+                          },
+                        },
+                        ref: String(ref++),
+                      }),
+                    );
+                    hb = setInterval(function () {
+                      if (ws.readyState === 1)
+                        ws.send(
+                          JSON.stringify({ topic: 'phoenix', event: 'heartbeat', payload: {}, ref: 'hb' }),
+                        );
+                    }, 25000);
+                  };
+
+                  ws.onmessage = function (ev) {
+                    var m;
+                    try {
+                      m = JSON.parse(ev.data);
+                    } catch (e) {
+                      return;
+                    }
+                    if (m.event === 'phx_reply' && m.payload && m.payload.status === 'ok') {
+                      setConn('实时连接中', '#2A7D62');
+                    }
+                    if (m.event === 'postgres_changes') {
+                      var rec = m.payload && m.payload.data && m.payload.data.record;
+                      if (rec && rec.id != null) addMsg(rec, false);
+                      if (m.payload.data.type === 'DELETE') {
+                        var old = m.payload.data.old;
+                        if (old && old.id != null && seen[old.id]) {
+                          var n = list.querySelector('[data-id="' + old.id + '"]');
+                          if (n) n.remove();
+                          delete seen[old.id];
+                        }
+                      }
+                    }
+                  };
+
+                  ws.onerror = function () {
+                    setConn('已连接（5 秒自动刷新）', '#479B7D');
+                  };
+                  ws.onclose = function () {
+                    if (hb) clearInterval(hb);
+                    setConn('已连接（5 秒自动刷新）', '#479B7D');
+                    startPolling();
+                  };
+                } catch (e) {
+                  setConn('已连接（5 秒自动刷新）', '#479B7D');
+                  startPolling();
+                }
+              }
+
+              fetchAll(false)
+                .then(function () {
+                  startRealtime();
+                  startPolling();
+                  list.scrollTop = list.scrollHeight;
+                })
+                .catch(function (e) {
+                  setConn('连接失败', '#D0453A');
+                  showErr(
+                    e.message +
+                      '　请检查 Supabase 的 URL / key 是否填对，以及建表 SQL 是否跑过。',
+                  );
+                });
+            })();
+          </script>
+        </>
+      )
+    }
+  </section>
+</BaseLayout>

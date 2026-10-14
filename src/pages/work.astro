@@ -27,14 +27,17 @@ const workVariants = ['work1', 'work2', 'work3', 'work4', 'work5', 'work6'] as c
     </p>
   </section>
 
-  <div class="grid gap-6 pb-16 sm:grid-cols-2">
+  <div class="reveal-stagger grid gap-6 pb-16 sm:grid-cols-2">
     {
       WORKS.map((work, i) => (
-        <article class="soft-card group flex flex-col overflow-hidden">
-          <div class="relative h-[200px] overflow-hidden" style="background-color: #F4F9F6;">
+        <article class="soft-card tilt-card group flex flex-col overflow-hidden">
+          <div class="relative h-[210px] overflow-hidden" style="background-color: #F6FAF7;">
             <Illustration
+              src={work.cover}
+              alt={`${work.title} 插画`}
               variant={workVariants[i % workVariants.length]}
-              class="h-full w-full transition-transform duration-500 group-hover:scale-[1.04]"
+              fill
+              class="transition-transform duration-700 group-hover:scale-[1.06]"
             />
           </div>
           <div class="flex flex-1 flex-col p-6">
@@ -54,7 +57,7 @@ const workVariants = ['work1', 'work2', 'work3', 'work4', 'work5', 'work6'] as c
     }
   </div>
 
-  <section class="pb-16">
+  <section class="reveal pb-16">
     <div
       class="rounded-[24px] border border-dashed px-8 py-10 text-center"
       style="border-color: var(--border-strong);"

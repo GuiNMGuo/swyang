@@ -1,0 +1,11 @@
+{
+  "enabled": false,
+  "supabaseUrl": "",
+  "supabaseAnonKey": "",
+  "title": "留言墙",
+  "subtitle": "想说什么就说什么。文字、图片、视频、文件都能传，只保留最新 100 条。",
+  "maxFileMB": 50,
+  "maxMessages": 100,
+  "bucket": "chat-files",
+  "table": "messages"
+}

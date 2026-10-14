@@ -4,16 +4,53 @@
  * 全部为手写路径，无外部依赖，任意尺寸清晰
  */
 interface Props {
-  variant?: 'avatar' | 'work1' | 'work2' | 'work3' | 'work4' | 'work5' | 'work6' | 'tool' | 'tool1' | 'tool2' | 'tool3';
+  /** 图片路径，如 /illustrations/avatar.png；有值时优先渲染图片 */
+  src?: string;
+  alt?: string;
+  /** src 为空时的 SVG 回退变体 */
+  variant?:
+    | 'avatar'
+    | 'work1'
+    | 'work2'
+    | 'work3'
+    | 'work4'
+    | 'work5'
+    | 'work6'
+    | 'tool'
+    | 'tool1'
+    | 'tool2'
+    | 'tool3';
   size?: number;
+  /** 铺满父容器（作品封面用） */
+  fill?: boolean;
   class?: string;
 }
 
-const { variant = 'avatar', size = 96, class: cls = '' } = Astro.props;
+const {
+  src = '',
+  alt = '',
+  variant = 'avatar',
+  size = 96,
+  fill = false,
+  class: cls = '',
+} = Astro.props;
+
+const hasImage = src.trim().length > 0;
 ---
 
 {
-  variant === 'avatar' && (
+  hasImage ? (
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      decoding="async"
+      class:list={[fill ? 'h-full w-full object-cover' : '', cls]}
+      style={fill ? undefined : `width:${size}px;height:${size}px;object-fit:cover;`}
+    />
+  ) : (
+    <>
+      {variant === 'avatar' && (
     <svg
       width={size}
       height={size}
@@ -216,5 +253,7 @@ const { variant = 'avatar', size = 96, class: cls = '' } = Astro.props;
         </>
       )}
     </svg>
+      )}
+    </>
   )
 }

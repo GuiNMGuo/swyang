@@ -1,7 +1,14 @@
 ---
-import { SITE, SOCIAL } from '../lib/site';
+import { SITE, SOCIAL, NAV } from '../lib/site';
 
 const path = Astro.url.pathname;
+
+const items = [{ label: '首页', href: '/' }, ...NAV];
+
+function isCurrent(href: string) {
+  if (href === '/') return path === '/';
+  return path.startsWith(href);
+}
 ---
 
 <header class="fixed top-0 left-0 right-0 z-50 flex justify-center px-5 pt-4 sm:pt-5">
@@ -17,10 +24,13 @@ const path = Astro.url.pathname;
     </a>
 
     <nav class="pill-nav overflow-x-auto" aria-label="主导航">
-      <a href="/" aria-current={path === '/' ? 'page' : undefined}>首页</a>
-      <a href="/work" aria-current={path.startsWith('/work') ? 'page' : undefined}>作品</a>
-      <a href="/tools" aria-current={path.startsWith('/tools') ? 'page' : undefined}>工具</a>
-      <a href="/about" aria-current={path.startsWith('/about') ? 'page' : undefined}>关于</a>
+      {
+        items.map((item) => (
+          <a href={item.href} aria-current={isCurrent(item.href) ? 'page' : undefined}>
+            {item.label}
+          </a>
+        ))
+      }
     </nav>
 
     <a
@@ -28,7 +38,7 @@ const path = Astro.url.pathname;
       target="_blank"
       rel="noopener me"
       aria-label="GitHub"
-      class="grid h-10 w-10 shrink-0 place-items-center rounded-full transition-transform hover:scale-105"
+      class="header-gh grid h-10 w-10 shrink-0 place-items-center rounded-full transition-transform hover:scale-105"
       style="background-color: rgba(255,255,255,.72); border: 1px solid var(--border); color: var(--text-mid);"
     >
       <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">

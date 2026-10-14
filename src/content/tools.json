@@ -1,0 +1,25 @@
+{
+  "items": [
+    {
+      "name": "文本处理台",
+      "desc": "文本清洗、格式化、批量替换，纯浏览器本地运算，不联网也能用。",
+      "status": "wip",
+      "icon": "/illustrations/tool1.png",
+      "href": ""
+    },
+    {
+      "name": "图片批处理",
+      "desc": "批量压缩、改尺寸、转格式，图片不离开你的电脑。",
+      "status": "plan",
+      "icon": "/illustrations/tool2.png",
+      "href": ""
+    },
+    {
+      "name": "数据速查",
+      "desc": "常用对照表、单位换算、计算器，即开即用。",
+      "status": "plan",
+      "icon": "/illustrations/tool3.png",
+      "href": ""
+    }
+  ]
+}

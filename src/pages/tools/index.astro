@@ -8,12 +8,6 @@ const badgeStyle: Record<string, { bg: string; fg: string; dot: string }> = {
   wip: { bg: '#FDF0D8', fg: '#A15C07', dot: '#E0A020' },
   plan: { bg: '#F0EEE6', fg: '#7D8A83', dot: '#C6C2B6' },
 };
-
-const toolIcon: Record<string, 'tool1' | 'tool2' | 'tool3'> = {
-  'text-lab': 'tool1',
-  'image-batch': 'tool2',
-  'data-lookup': 'tool3',
-};
 ---
 
 <BaseLayout title="工具" description="打开就能用的小工具，纯本地运行" wide>
@@ -37,7 +31,7 @@ const toolIcon: Record<string, 'tool1' | 'tool2' | 'tool3'> = {
     </p>
   </section>
 
-  <div class="grid items-stretch gap-6 pb-16 sm:grid-cols-2 lg:grid-cols-3">
+  <div class="reveal-stagger grid items-stretch gap-6 pb-16 sm:grid-cols-2 lg:grid-cols-3">
     {
       TOOLS.map((tool) => {
         const b = badgeStyle[tool.status] ?? badgeStyle.plan;
@@ -46,10 +40,16 @@ const toolIcon: Record<string, 'tool1' | 'tool2' | 'tool3'> = {
         return (
           <Tag
             {...(usable ? { href: tool.href } : {})}
-            class:list={['soft-card group flex h-full flex-col p-6', usable && 'cursor-pointer']}
+            class:list={['soft-card tilt-card group flex h-full flex-col p-6', usable && 'cursor-pointer']}
           >
             <div class="flex items-start justify-between gap-3">
-              <Illustration variant={toolIcon[tool.slug] ?? 'tool'} size={52} />
+              <Illustration
+                src={tool.icon}
+                alt={`${tool.name} 插画`}
+                variant="tool"
+                size={54}
+                class="rounded-xl"
+              />
               <span
                 class="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[11.5px] font-bold"
                 style={`background-color: ${b.bg}; color: ${b.fg};`}
@@ -65,7 +65,7 @@ const toolIcon: Record<string, 'tool1' | 'tool2' | 'tool3'> = {
             {
               usable ? (
                 <span
-                  class="mt-5 inline-flex items-center gap-1.5 text-[13.5px] font-bold"
+                  class="arrow-slide mt-5 inline-flex items-center gap-1.5 text-[13.5px] font-bold"
                   style="color: var(--color-ink-600);"
                 >
                   打开工具
@@ -78,7 +78,6 @@ const toolIcon: Record<string, 'tool1' | 'tool2' | 'tool3'> = {
                     stroke-width="2.6"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    class="transition-transform group-hover:translate-x-0.5"
                   >
                     <path d="M5 12h13M13 6l6 6-6 6" />
                   </svg>
