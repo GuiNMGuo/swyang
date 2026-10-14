@@ -1,5 +1,5 @@
 {
-  "enabled": false,
+  "enabled": true,
   "supabaseUrl": "",
   "supabaseAnonKey": "",
   "title": "留言墙",
