@@ -1,0 +1,72 @@
+---
+import { SITE } from '../lib/site';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+  noindex?: boolean;
+  wide?: boolean;
+}
+
+const { title, description = SITE.description, noindex = false, wide = false } = Astro.props;
+
+const pageTitle = title ? `${title} · ${SITE.title}` : `${SITE.title} — ${SITE.tagline}`;
+const canonical = new URL(Astro.url.pathname, Astro.site ?? SITE.url).href;
+---
+
+<!doctype html>
+<html lang={SITE.lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <meta name="author" content={SITE.author} />
+    <meta name="generator" content={Astro.generator} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:site_name" content={SITE.title} />
+    <meta property="og:locale" content="zh_CN" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="sitemap" href="/sitemap-index.xml" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body class="relative flex min-h-screen flex-col">
+    <div class="page-bg" aria-hidden="true"></div>
+
+    <a
+      href="#main"
+      class="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-lg focus:border focus:bg-white focus:px-4 focus:py-2 focus:text-sm"
+    >
+      跳到主要内容
+    </a>
+
+    <Header />
+
+    <main id="main" class="w-full flex-1">
+      <div class:list={['mx-auto w-full px-5 sm:px-6', wide ? 'max-w-5xl' : 'max-w-3xl']}>
+        <slot />
+      </div>
+    </main>
+
+    <Footer />
+  </body>
+</html>

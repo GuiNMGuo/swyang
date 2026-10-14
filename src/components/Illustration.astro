@@ -1,0 +1,220 @@
+---
+/**
+ * 原创 SVG 插画 —— 用作头像 / 作品封面占位
+ * 全部为手写路径，无外部依赖，任意尺寸清晰
+ */
+interface Props {
+  variant?: 'avatar' | 'work1' | 'work2' | 'work3' | 'work4' | 'work5' | 'work6' | 'tool' | 'tool1' | 'tool2' | 'tool3';
+  size?: number;
+  class?: string;
+}
+
+const { variant = 'avatar', size = 96, class: cls = '' } = Astro.props;
+---
+
+{
+  variant === 'avatar' && (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 120 120"
+      fill="none"
+      class={cls}
+      role="img"
+      aria-label="作者插画头像"
+    >
+      <defs>
+        <clipPath id="av-clip">
+          <circle cx="60" cy="60" r="58" />
+        </clipPath>
+      </defs>
+
+      <circle cx="60" cy="60" r="58" fill="#FDF6E6" />
+
+      <g clip-path="url(#av-clip)">
+        <!-- 耳朵 -->
+        <circle cx="34.5" cy="54" r="5" fill="#F2DCB6" />
+        <circle cx="85.5" cy="54" r="5" fill="#F2DCB6" />
+        <!-- 头 -->
+        <circle cx="60" cy="51" r="25.5" fill="#F7E4C4" />
+        <!-- 头发 -->
+        <path
+          d="M34.5 50c0-14.5 11-25.5 25.5-25.5S85.5 35.5 85.5 50c0-7.5-3.5-11.5-8.5-14-4.5-.9-7 1.2-17 1.2S48 35.1 43.5 36c-5 1-8.5 5-8.5 14z"
+          fill="#134E3D"
+        />
+        <!-- 眼睛 -->
+        <circle cx="51" cy="52" r="3.3" fill="#0D3D30" />
+        <circle cx="69" cy="52" r="3.3" fill="#0D3D30" />
+        <!-- 腮红 -->
+        <ellipse cx="44.5" cy="59" rx="4" ry="2.4" fill="#F0BFA8" opacity="0.6" />
+        <ellipse cx="75.5" cy="59" rx="4" ry="2.4" fill="#F0BFA8" opacity="0.6" />
+        <!-- 微笑 -->
+        <path
+          d="M53.5 62.5c2 3 4.6 4.2 6.5 4.2s4.5-1.2 6.5-4.2"
+          stroke="#0D3D30"
+          stroke-width="2.4"
+          stroke-linecap="round"
+          fill="none"
+        />
+        <!-- 身体 -->
+        <path d="M25 110c0-18 15.5-29.5 35-29.5S95 92 95 110z" fill="#134E3D" />
+        <!-- 领口 -->
+        <path d="M50 82.5c3 4 6.5 6 10 6s7-2 10-6" stroke="#A8D7C3" stroke-width="2.8" stroke-linecap="round" fill="none" />
+      </g>
+
+      <circle cx="60" cy="60" r="58" fill="none" stroke="#134E3D" stroke-width="2.5" />
+
+      <!-- 星星 -->
+      <path
+        d="M95 29.5l1.9 6.6 6.6 1.9-6.6 1.9-1.9 6.6-1.9-6.6-6.6-1.9 6.6-1.9z"
+        fill="#E8C46A"
+        stroke="#134E3D"
+        stroke-width="1.4"
+        stroke-linejoin="round"
+      />
+      <path
+        d="M26 27l1.3 4.5 4.5 1.3-4.5 1.3-1.3 4.5-1.3-4.5-4.5-1.3 4.5-1.3z"
+        fill="#A8D7C3"
+      />
+    </svg>
+  )
+}
+
+{
+  variant.startsWith('work') && (
+    <svg
+      width="100%"
+      height="100%"
+      viewBox="0 0 320 200"
+      fill="none"
+      preserveAspectRatio="xMidYMid slice"
+      class={cls}
+      role="img"
+      aria-label="作品插画"
+    >
+      <rect width="320" height="200" fill="#F4F9F6" />
+      <circle cx="52" cy="42" r="26" fill="#FDF6E6" />
+      <circle cx="272" cy="164" r="34" fill="#E9F5EF" />
+      {variant === 'work1' && (
+        <>
+          <rect x="96" y="52" width="72" height="96" rx="10" fill="#134E3D" />
+          <rect x="106" y="66" width="52" height="30" rx="5" fill="#A8D7C3" />
+          <rect x="106" y="104" width="38" height="7" rx="3.5" fill="#74BB9F" />
+          <rect x="106" y="118" width="52" height="7" rx="3.5" fill="#74BB9F" />
+          <rect x="176" y="70" width="52" height="78" rx="10" fill="#479B7D" />
+          <rect x="184" y="82" width="36" height="24" rx="4" fill="#E9F5EF" />
+          <rect x="184" y="114" width="28" height="6" rx="3" fill="#D3EBE0" />
+          <rect x="184" y="126" width="36" height="6" rx="3" fill="#D3EBE0" />
+          <path d="M60 170h200" stroke="#A8D7C3" stroke-width="2.5" stroke-linecap="round" />
+        </>
+      )}
+      {variant === 'work2' && (
+        <>
+          <rect x="112" y="44" width="96" height="112" rx="12" fill="#134E3D" />
+          <path d="M136 76l-14 24 14 24" stroke="#A8D7C3" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+          <path d="M184 76l14 24-14 24" stroke="#A8D7C3" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+          <path d="M168 68l-16 64" stroke="#F2D6A4" stroke-width="7" stroke-linecap="round" />
+        </>
+      )}
+      {variant === 'work3' && (
+        <>
+          <rect x="96" y="60" width="128" height="80" rx="12" fill="#134E3D" />
+          <path d="M148 84l34 16-34 16z" fill="#A8D7C3" />
+          <rect x="82" y="52" width="156" height="96" rx="14" stroke="#479B7D" stroke-width="2.5" fill="none" stroke-dasharray="6 6" />
+          <path d="M60 168h200" stroke="#A8D7C3" stroke-width="2.5" stroke-linecap="round" />
+          <circle cx="240" cy="76" r="9" fill="#F2D6A4" />
+        </>
+      )}
+      {variant === 'work4' && (
+        <>
+          <g>
+            <rect x="86" y="46" width="44" height="34" rx="6" fill="#134E3D" />
+            <rect x="138" y="46" width="44" height="34" rx="6" fill="#479B7D" />
+            <rect x="190" y="46" width="44" height="34" rx="6" fill="#134E3D" />
+            <rect x="86" y="88" width="44" height="34" rx="6" fill="#479B7D" />
+            <rect x="138" y="88" width="44" height="34" rx="6" fill="#134E3D" />
+            <rect x="190" y="88" width="44" height="34" rx="6" fill="#A8D7C3" />
+            <rect x="86" y="130" width="44" height="26" rx="6" fill="#A8D7C3" />
+            <rect x="138" y="130" width="44" height="26" rx="6" fill="#479B7D" />
+            <rect x="190" y="130" width="44" height="26" rx="6" fill="#134E3D" />
+          </g>
+        </>
+      )}
+      {variant === 'work5' && (
+        <>
+          <rect x="78" y="96" width="34" height="58" rx="7" fill="#A8D7C3" />
+          <rect x="118" y="72" width="34" height="82" rx="7" fill="#479B7D" />
+          <rect x="158" y="52" width="34" height="102" rx="7" fill="#134E3D" />
+          <rect x="198" y="86" width="34" height="68" rx="7" fill="#74BB9F" />
+          <path d="M70 164h186" stroke="#134E3D" stroke-width="2.5" stroke-linecap="round" />
+          <path d="M74 96l44-26 40-20 44 34" stroke="#F2D6A4" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+        </>
+      )}
+      {variant === 'work6' && (
+        <>
+          <rect x="92" y="56" width="136" height="92" rx="12" fill="#134E3D" />
+          <rect x="106" y="70" width="108" height="64" rx="7" fill="#0D3D30" />
+          <circle cx="160" cy="102" r="22" fill="none" stroke="#A8D7C3" stroke-width="3" />
+          <circle cx="160" cy="102" r="11" fill="#74BB9F" />
+          <path d="M126 42h68" stroke="#479B7D" stroke-width="4" stroke-linecap="round" />
+        </>
+      )}
+    </svg>
+  )
+}
+
+{
+  (variant === 'tool' || variant === 'tool1' || variant === 'tool2' || variant === 'tool3') && (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 48 48"
+      fill="none"
+      class={cls}
+      role="img"
+      aria-label="工具插画"
+    >
+      <rect x="4" y="4" width="40" height="40" rx="12" fill="#EEF7F2" stroke="#134E3D" stroke-width="1.8" />
+
+      {/* tool1 —— 文本行 + 光标 */}
+      {variant === 'tool1' && (
+        <>
+          <path d="M13 18h22" stroke="#134E3D" stroke-width="2.6" stroke-linecap="round" />
+          <path d="M13 25h22" stroke="#74BB9F" stroke-width="2.6" stroke-linecap="round" />
+          <path d="M13 32h12" stroke="#134E3D" stroke-width="2.6" stroke-linecap="round" />
+          <rect x="28" y="28.5" width="2.6" height="8" rx="1.3" fill="#E8C46A" />
+        </>
+      )}
+
+      {/* tool2 —— 图片 + 双向箭头 */}
+      {variant === 'tool2' && (
+        <>
+          <rect x="12" y="14" width="24" height="20" rx="4" fill="#134E3D" />
+          <circle cx="19.5" cy="21" r="2.6" fill="#E8C46A" />
+          <path d="M15 31l6.5-7 4.5 5 4-3.5 5 5.5z" fill="#A8D7C3" />
+          <path d="M12 39h10M26 39h10" stroke="#479B7D" stroke-width="2.4" stroke-linecap="round" />
+          <path d="M26 36.6l3-.6-3-.6" stroke="#479B7D" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+        </>
+      )}
+
+      {/* tool3 —— 放大镜查表 */}
+      {variant === 'tool3' && (
+        <>
+          <rect x="12" y="13" width="24" height="17" rx="3.5" fill="#134E3D" />
+          <path d="M12 20h24M20 13v17M28 13v17" stroke="#A8D7C3" stroke-width="1.8" />
+          <circle cx="30" cy="31" r="6" fill="#EEF7F2" stroke="#134E3D" stroke-width="2.4" />
+          <path d="M34.5 35.5l3.5 3.5" stroke="#134E3D" stroke-width="2.6" stroke-linecap="round" />
+        </>
+      )}
+
+      {/* 通用 tool —— 文档 + 星 */}
+      {variant === 'tool' && (
+        <>
+          <path d="M16 20h16M16 27h11" stroke="#134E3D" stroke-width="2.6" stroke-linecap="round" />
+          <circle cx="33" cy="31" r="6" fill="#F2D6A4" stroke="#134E3D" stroke-width="1.8" />
+          <path d="M33 28.5v5M30.5 31h5" stroke="#134E3D" stroke-width="1.6" stroke-linecap="round" />
+        </>
+      )}
+    </svg>
+  )
+}

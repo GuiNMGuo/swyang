@@ -1,0 +1,112 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Illustration from '../../components/Illustration.astro';
+import { TOOLS, STATUS_LABEL } from '../../lib/site';
+
+const badgeStyle: Record<string, { bg: string; fg: string; dot: string }> = {
+  ready: { bg: '#E4F4EA', fg: '#1B634D', dot: '#2A7D62' },
+  wip: { bg: '#FDF0D8', fg: '#A15C07', dot: '#E0A020' },
+  plan: { bg: '#F0EEE6', fg: '#7D8A83', dot: '#C6C2B6' },
+};
+
+const toolIcon: Record<string, 'tool1' | 'tool2' | 'tool3'> = {
+  'text-lab': 'tool1',
+  'image-batch': 'tool2',
+  'data-lookup': 'tool3',
+};
+---
+
+<BaseLayout title="工具" description="打开就能用的小工具，纯本地运行" wide>
+  <section class="relative pb-12 pt-28 sm:pt-32">
+    <svg
+      class="sparkle"
+      style="top: 108px; right: 10%; width: 26px; height: 26px;"
+      viewBox="0 0 24 24"
+      fill="#74BB9F"
+      aria-hidden="true"
+    >
+      <path d="M12 0l2.6 9.4L24 12l-9.4 2.6L12 24l-2.6-9.4L0 12l9.4-2.6z"></path>
+    </svg>
+
+    <div class="mb-2 text-[12.5px] font-bold tracking-[0.14em]" style="color: var(--color-ink-400);">
+      TOOLS
+    </div>
+    <h1 class="text-[2.1rem] font-extrabold tracking-tight sm:text-[2.6rem]">工具箱</h1>
+    <p class="mt-4 max-w-xl text-[15px] leading-relaxed muted">
+      纯浏览器本地运算，不上传文件，打开就能用。做这些东西的初衷只有一个 —— 自己用得顺手。
+    </p>
+  </section>
+
+  <div class="grid items-stretch gap-6 pb-16 sm:grid-cols-2 lg:grid-cols-3">
+    {
+      TOOLS.map((tool) => {
+        const b = badgeStyle[tool.status] ?? badgeStyle.plan;
+        const usable = tool.status === 'ready' && tool.href;
+        const Tag = usable ? 'a' : 'div';
+        return (
+          <Tag
+            {...(usable ? { href: tool.href } : {})}
+            class:list={['soft-card group flex h-full flex-col p-6', usable && 'cursor-pointer']}
+          >
+            <div class="flex items-start justify-between gap-3">
+              <Illustration variant={toolIcon[tool.slug] ?? 'tool'} size={52} />
+              <span
+                class="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[11.5px] font-bold"
+                style={`background-color: ${b.bg}; color: ${b.fg};`}
+              >
+                <span class="h-1.5 w-1.5 rounded-full" style={`background-color: ${b.dot};`} />
+                {STATUS_LABEL[tool.status as keyof typeof STATUS_LABEL]}
+              </span>
+            </div>
+
+            <h2 class="mt-5 text-[16px] font-extrabold leading-snug">{tool.name}</h2>
+            <p class="mt-2.5 flex-1 text-[13px] leading-relaxed muted">{tool.desc}</p>
+
+            {
+              usable ? (
+                <span
+                  class="mt-5 inline-flex items-center gap-1.5 text-[13.5px] font-bold"
+                  style="color: var(--color-ink-600);"
+                >
+                  打开工具
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.6"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="transition-transform group-hover:translate-x-0.5"
+                  >
+                    <path d="M5 12h13M13 6l6 6-6 6" />
+                  </svg>
+                </span>
+              ) : (
+                <span class="mt-5 text-[12.5px] font-bold faint">敬请期待</span>
+              )
+            }
+          </Tag>
+        );
+      })
+    }
+  </div>
+
+  <section class="pb-16">
+    <div
+      class="rounded-[24px] border border-dashed px-8 py-12 text-center"
+      style="border-color: var(--border-strong);"
+    >
+      <div class="flex justify-center">
+        <svg width="42" height="42" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 0l2.6 9.4L24 12l-9.4 2.6L12 24l-2.6-9.4L0 12l9.4-2.6z" fill="#E8C46A"></path>
+        </svg>
+      </div>
+      <h2 class="mt-5 text-[16px] font-extrabold">缺个什么工具？</h2>
+      <p class="mx-auto mt-2.5 max-w-md text-[13.5px] leading-relaxed muted">
+        有想法就告诉我。真的用得上的，我会做出来。
+      </p>
+    </div>
+  </section>
+</BaseLayout>

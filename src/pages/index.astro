@@ -1,0 +1,183 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Illustration from '../components/Illustration.astro';
+import { SITE, WORKS, TOOLS, STATUS_LABEL } from '../lib/site';
+
+const featuredWorks = WORKS.slice(0, 3);
+const workVariants = ['work1', 'work2', 'work3', 'work4', 'work5', 'work6'] as const;
+const toolIcon: Record<string, 'tool1' | 'tool2' | 'tool3'> = {
+  'text-lab': 'tool1',
+  'image-batch': 'tool2',
+  'data-lookup': 'tool3',
+};
+---
+
+<BaseLayout wide>
+  <!-- ============ HERO ============ -->
+  <section class="relative pb-16 pt-28 sm:pb-24 sm:pt-36">
+    <svg
+      class="sparkle"
+      style="top: 118px; left: 6%; width: 34px; height: 34px;"
+      viewBox="0 0 24 24"
+      fill="#E8C46A"
+      aria-hidden="true"
+    >
+      <path d="M12 0l2.6 9.4L24 12l-9.4 2.6L12 24l-2.6-9.4L0 12l9.4-2.6z"></path>
+    </svg>
+    <svg
+      class="sparkle s2"
+      style="top: 208px; right: 12%; width: 22px; height: 22px;"
+      viewBox="0 0 24 24"
+      fill="#74BB9F"
+      aria-hidden="true"
+    >
+      <path d="M12 0l2.6 9.4L24 12l-9.4 2.6L12 24l-2.6-9.4L0 12l9.4-2.6z"></path>
+    </svg>
+    <svg
+      class="sparkle s3"
+      style="bottom: 84px; left: 14%; width: 16px; height: 16px;"
+      viewBox="0 0 24 24"
+      fill="#A8D7C3"
+      aria-hidden="true"
+    >
+      <path d="M12 0l2.6 9.4L24 12l-9.4 2.6L12 24l-2.6-9.4L0 12l9.4-2.6z"></path>
+    </svg>
+
+    <div class="flex flex-col items-center gap-10 sm:flex-row sm:items-center sm:gap-14">
+      <div class="relative shrink-0">
+        <div
+          class="absolute -inset-3 rounded-full"
+          style="background: radial-gradient(circle, rgba(242,214,164,.55) 0%, rgba(242,214,164,0) 70%);"
+        >
+        </div>
+        <Illustration variant="avatar" size={172} class="relative" />
+      </div>
+
+      <div class="flex-1 text-center sm:text-left">
+        <h1 class="text-[2.4rem] font-extrabold leading-[1.12] tracking-tight sm:text-[3.4rem]">
+          {SITE.heroLines.map((line, i) => (
+            <span class:list={['block', i === 1 && 'text-[var(--color-ink-500)]']}>{line}</span>
+          ))}
+        </h1>
+
+        <p class="mx-auto mt-6 max-w-lg text-[15.5px] leading-relaxed muted sm:mx-0 sm:text-[16.5px]">
+          {SITE.heroDesc}
+        </p>
+
+        <div class="mt-9 flex flex-wrap items-center justify-center gap-3 sm:justify-start">
+          <a href="/work" class="btn-primary">
+            看看作品
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.6"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M5 12h13M13 6l6 6-6 6"></path>
+            </svg>
+          </a>
+          <a href="/tools" class="btn-ghost">打开工具箱</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 作品 ============ -->
+  <section class="pb-16 sm:pb-20">
+    <div class="mb-8 flex items-end justify-between gap-4">
+      <div>
+        <div class="mb-2 text-[12.5px] font-bold tracking-[0.14em]" style="color: var(--color-ink-400);">
+          SELECTED WORK
+        </div>
+        <h2 class="text-[1.6rem] font-extrabold tracking-tight sm:text-[1.9rem]">做过的东西</h2>
+      </div>
+      <a
+        href="/work"
+        class="shrink-0 pb-1 text-[13.5px] font-bold transition-colors hover:text-[var(--color-ink-600)]"
+        style="color: var(--text-soft);">全部作品 →</a
+      >
+    </div>
+
+    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {
+        featuredWorks.map((work, i) => (
+          <article class="soft-card group flex flex-col overflow-hidden">
+            <div class="relative h-[168px] overflow-hidden" style="background-color: #F4F9F6;">
+              <Illustration
+                variant={workVariants[i % workVariants.length]}
+                class="h-full w-full transition-transform duration-500 group-hover:scale-[1.04]"
+              />
+            </div>
+            <div class="flex flex-1 flex-col p-6">
+              <div class="flex flex-wrap gap-2">
+                {work.tags.map((t) => (
+                  <span class="tag">{t}</span>
+                ))}
+              </div>
+              <h3 class="mt-4 text-[16.5px] font-extrabold leading-snug">{work.title}</h3>
+              <p class="mt-2.5 flex-1 text-[13.5px] leading-relaxed muted">{work.desc}</p>
+              <div class="mt-5 text-[12px] font-bold tabular-nums faint">{work.year}</div>
+            </div>
+          </article>
+        ))
+      }
+    </div>
+  </section>
+
+  <!-- ============ 工具 ============ -->
+  <section class="pb-16 sm:pb-20">
+    <div class="mb-8">
+      <div class="mb-2 text-[12.5px] font-bold tracking-[0.14em]" style="color: var(--color-ink-400);">
+        PLAYGROUND
+      </div>
+      <h2 class="text-[1.6rem] font-extrabold tracking-tight sm:text-[1.9rem]">能直接用的工具</h2>
+      <p class="mt-2.5 max-w-xl text-[14px] leading-relaxed muted">
+        纯浏览器本地运算，文件不离开你的电脑，打开就能用。
+      </p>
+    </div>
+
+    <div class="grid gap-5 sm:grid-cols-3">
+      {
+        TOOLS.map((tool) => (
+          <div class="soft-card flex flex-col p-6">
+            <Illustration variant={toolIcon[tool.slug] ?? 'tool'} size={46} />
+            <h3 class="mt-5 text-[15.5px] font-extrabold leading-snug">{tool.name}</h3>
+            <p class="mt-2.5 flex-1 text-[13px] leading-relaxed muted">{tool.desc}</p>
+            <div class="mt-5 flex items-center gap-2">
+              <span
+                class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-bold"
+                style:list={[
+                  tool.status === 'ready'
+                    ? 'background-color: #E4F4EA; color: #1B634D;'
+                    : tool.status === 'wip'
+                      ? 'background-color: #FDF0D8; color: #A15C07;'
+                      : 'background-color: #F0EEE6; color: #7D8A83;',
+                ]}
+              >
+                <span
+                  class="h-1.5 w-1.5 rounded-full"
+                  style:list={[
+                    tool.status === 'ready'
+                      ? 'background-color: #2A7D62;'
+                      : tool.status === 'wip'
+                        ? 'background-color: #E0A020;'
+                        : 'background-color: #C6C2B6;',
+                  ]}
+                />
+                {STATUS_LABEL[tool.status as keyof typeof STATUS_LABEL]}
+              </span>
+            </div>
+          </div>
+        ))
+      }
+    </div>
+
+    <div class="mt-8">
+      <a href="/tools" class="btn-primary">进入工具箱</a>
+    </div>
+  </section>
+</BaseLayout>

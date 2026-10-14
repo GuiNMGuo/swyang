@@ -1,0 +1,105 @@
+---
+import { SITE, SOCIAL, NAV } from '../lib/site';
+
+const year = new Date().getFullYear();
+---
+
+<footer class="px-5 pb-8 pt-20 sm:px-6">
+  <div class="mx-auto w-full max-w-5xl">
+    <div
+      class="relative overflow-hidden rounded-[28px] px-7 py-12 sm:px-12 sm:py-14"
+      style="background-color: #0D3D30;"
+    >
+      <!-- 装饰星 -->
+      <svg
+        class="sparkle"
+        style="top: 28px; right: 40px; width: 30px; height: 30px;"
+        viewBox="0 0 24 24"
+        fill="#F2D6A4"
+        aria-hidden="true"
+      >
+        <path d="M12 0l2.6 9.4L24 12l-9.4 2.6L12 24l-2.6-9.4L0 12l9.4-2.6z"></path>
+      </svg>
+      <svg
+        class="sparkle s2"
+        style="bottom: 34px; right: 116px; width: 16px; height: 16px;"
+        viewBox="0 0 24 24"
+        fill="#A8D7C3"
+        aria-hidden="true"
+      >
+        <path d="M12 0l2.6 9.4L24 12l-9.4 2.6L12 24l-2.6-9.4L0 12l9.4-2.6z"></path>
+      </svg>
+
+      <div class="relative flex flex-col gap-10 sm:flex-row sm:items-start sm:justify-between">
+        <div class="max-w-md">
+          <h2 class="text-[1.7rem] font-extrabold leading-tight tracking-tight text-white sm:text-[2rem]">
+            有想法？<br />聊两句。
+          </h2>
+          <p class="mt-4 text-[14.5px] leading-relaxed" style="color: rgba(255,255,255,.62);">
+            想做点东西、想问问工具怎么用，或者只是想打个招呼，都可以直接找我。
+          </p>
+
+          <div class="mt-7 flex flex-wrap gap-3">
+            <a
+              href={`mailto:${SOCIAL.email}`}
+              class="inline-flex items-center gap-2 rounded-full px-6 py-3 text-[14.5px] font-bold transition-transform hover:-translate-y-0.5"
+              style="background-color: #FDF6E6; color: #0D3D30;"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="3" y="5" width="18" height="14" rx="2.5"></rect>
+                <path d="m3.5 7.5 8.5 5.6 8.5-5.6"></path>
+              </svg>
+              写封邮件
+            </a>
+            <a
+              href={SOCIAL.github}
+              target="_blank"
+              rel="noopener me"
+              class="inline-flex items-center gap-2 rounded-full px-6 py-3 text-[14.5px] font-bold text-white transition-colors"
+              style="border: 1px solid rgba(255,255,255,.28);"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.2.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.1 0 4.7-2.8 5.7-5.5 6 .4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3"></path>
+              </svg>
+              GitHub
+            </a>
+          </div>
+        </div>
+
+        <nav class="shrink-0 sm:pt-2" aria-label="页脚导航">
+          <div class="mb-4 text-[12px] font-bold tracking-[0.14em]" style="color: rgba(255,255,255,.4);">
+            浏览
+          </div>
+          <ul class="flex flex-wrap gap-x-7 gap-y-3 sm:flex-col sm:gap-x-0 sm:gap-y-3.5">
+            <li>
+              <a href="/" class="text-[14px] font-bold" style="color: rgba(255,255,255,.78);">首页</a>
+            </li>
+            {
+              NAV.map((item) => (
+                <li>
+                  <a href={item.href} class="text-[14px] font-bold" style="color: rgba(255,255,255,.78);">
+                    {item.label}
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </nav>
+      </div>
+    </div>
+
+    <div class="mt-6 flex flex-col items-center justify-between gap-2 px-2 sm:flex-row">
+      <p class="text-[12.5px] faint">© {year} {SITE.author}</p>
+      <p class="text-[12.5px] faint">{SITE.url.replace('https://', '')}</p>
+    </div>
+  </div>
+</footer>
