@@ -1,15 +1,26 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Illustration from '../components/Illustration.astro';
-import { SITE, WORKS, TOOLS, STATUS_LABEL } from '../lib/site';
+import { SITE, WORKS, TOOLS, STATUS_LABEL, HOME, SOCIAL } from '../lib/site';
 
 const featuredWorks = WORKS.slice(0, 3);
 const workVariants = ['work1', 'work2', 'work3', 'work4', 'work5', 'work6'] as const;
+
+const statusStyles: Record<string, string> = {
+  ready: 'background-color: #E4F4EA; color: #1B634D;',
+  wip: 'background-color: #FDF0D8; color: #A15C07;',
+  plan: 'background-color: #F0EEE6; color: #7D8A83;',
+};
+const statusDots: Record<string, string> = {
+  ready: 'background-color: #2A7D62;',
+  wip: 'background-color: #E0A020;',
+  plan: 'background-color: #C6C2B6;',
+};
 ---
 
 <BaseLayout wide>
   <!-- ============ HERO ============ -->
-  <section class="relative pb-16 pt-28 sm:pb-24 sm:pt-36">
+  <section class="relative pb-14 pt-28 sm:pb-20 sm:pt-36">
     <svg
       class="sparkle"
       style="top: 118px; left: 6%; width: 34px; height: 34px;"
@@ -46,8 +57,8 @@ const workVariants = ['work1', 'work2', 'work3', 'work4', 'work5', 'work6'] as c
         >
         </div>
         <Illustration
-          src="/illustrations/avatar.png"
-          alt="追风的头像插画"
+          src="/illustrations/avatar.webp"
+          alt={`${SITE.author}的头像插画`}
           variant="avatar"
           size={180}
           class="relative rounded-full shadow-lg"
@@ -56,6 +67,11 @@ const workVariants = ['work1', 'work2', 'work3', 'work4', 'work5', 'work6'] as c
       </div>
 
       <div class="flex-1 text-center sm:text-left">
+        <div class="mb-3 inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 status-chip">
+          <span class="status-pulse"></span>
+          <span>在做跨境选品与自动化工具</span>
+        </div>
+
         <h1 class="text-[2.4rem] font-extrabold leading-[1.12] tracking-tight sm:text-[3.4rem]">
           {SITE.heroLines.map((line, i) => (
             <span
@@ -91,19 +107,93 @@ const workVariants = ['work1', 'work2', 'work3', 'work4', 'work5', 'work6'] as c
             </svg>
           </a>
           <a href="/tools" class="btn-ghost">打开工具箱</a>
+          <a href="/chat" class="btn-ghost">进聊天室</a>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ============ 作品 ============ -->
-  <section class="pb-16 sm:pb-20">
-    <div class="mb-8 flex items-end justify-between gap-4">
-      <div>
-        <div class="mb-2 text-[12.5px] font-bold tracking-[0.14em]" style="color: var(--color-ink-400);">
-          SELECTED WORK
+  <!-- ============ 数据 ============ -->
+  {
+    HOME.stats.length > 0 && (
+      <section class="pb-14 sm:pb-20">
+        <div class="reveal-stagger grid grid-cols-2 gap-4 sm:grid-cols-4">
+          {HOME.stats.map((s) => (
+            <div class="soft-card flex flex-col items-center px-4 py-6 text-center">
+              <div class="flex items-baseline gap-0.5">
+                <span class="stat-num tabular-nums">{s.num}</span>
+                <span class="text-[13px] font-extrabold muted">{s.unit}</span>
+              </div>
+              <div class="mt-2 text-[12.5px] font-bold leading-snug faint">{s.label}</div>
+            </div>
+          ))}
         </div>
-        <h2 class="text-[1.6rem] font-extrabold tracking-tight sm:text-[1.9rem]">做过的东西</h2>
+      </section>
+    )
+  }
+
+  <!-- ============ 最近在做 ============ -->
+  <section class="pb-14 sm:pb-20">
+    <div class="reveal mb-8">
+      <div class="kicker">{HOME.now.kicker}</div>
+      <h2 class="section-title">{HOME.now.title}</h2>
+      {HOME.now.desc && <p class="section-desc">{HOME.now.desc}</p>}
+    </div>
+
+    <div class="reveal-stagger grid gap-5 sm:grid-cols-3">
+      {
+        HOME.now.items.map((item) => (
+          <div class="soft-card tilt-card flex flex-col p-6">
+            <div class="flex items-start justify-between gap-3">
+              <span class="now-bullet" aria-hidden="true">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 0l2.6 9.4L24 12l-9.4 2.6L12 24l-2.6-9.4L0 12l9.4-2.6z" />
+                </svg>
+              </span>
+              {item.tag && <span class="now-tag">{item.tag}</span>}
+            </div>
+            <h3 class="mt-4 text-[15.5px] font-extrabold leading-snug">{item.title}</h3>
+            <p class="mt-2.5 flex-1 text-[13px] leading-relaxed muted">{item.desc}</p>
+          </div>
+        ))
+      }
+    </div>
+  </section>
+
+  <!-- ============ 做事方式 ============ -->
+  <section class="pb-14 sm:pb-20">
+    <div
+      class="rounded-[26px] px-6 py-9 sm:px-10 sm:py-11"
+      style="background-color: rgba(255,255,255,.62); border: 1px solid var(--border);"
+    >
+      <div class="reveal mb-8">
+        <div class="kicker">{HOME.principles.kicker}</div>
+        <h2 class="section-title">{HOME.principles.title}</h2>
+        {HOME.principles.desc && <p class="section-desc">{HOME.principles.desc}</p>}
+      </div>
+
+      <div class="reveal-stagger grid gap-x-10 gap-y-7 sm:grid-cols-2">
+        {
+          HOME.principles.items.map((item, i) => (
+            <div class="flex gap-4">
+              <div class="principle-num">{String(i + 1).padStart(2, '0')}</div>
+              <div>
+                <h3 class="text-[15px] font-extrabold leading-snug">{item.title}</h3>
+                <p class="mt-1.5 text-[13.5px] leading-relaxed muted">{item.desc}</p>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 作品 ============ -->
+  <section class="pb-14 sm:pb-20">
+    <div class="mb-8 flex items-end justify-between gap-4">
+      <div class="reveal">
+        <div class="kicker">SELECTED WORK</div>
+        <h2 class="section-title">做过的东西</h2>
       </div>
       <a
         href="/work"
@@ -142,15 +232,11 @@ const workVariants = ['work1', 'work2', 'work3', 'work4', 'work5', 'work6'] as c
   </section>
 
   <!-- ============ 工具 ============ -->
-  <section class="pb-16 sm:pb-20">
+  <section class="pb-14 sm:pb-20">
     <div class="reveal mb-8">
-      <div class="mb-2 text-[12.5px] font-bold tracking-[0.14em]" style="color: var(--color-ink-400);">
-        PLAYGROUND
-      </div>
-      <h2 class="text-[1.6rem] font-extrabold tracking-tight sm:text-[1.9rem]">能直接用的工具</h2>
-      <p class="mt-2.5 max-w-xl text-[14px] leading-relaxed muted">
-        纯浏览器本地运算，文件不离开你的电脑，打开就能用。
-      </p>
+      <div class="kicker">PLAYGROUND</div>
+      <h2 class="section-title">能直接用的工具</h2>
+      <p class="section-desc">纯浏览器本地运算，文件不离开你的电脑，打开就能用。</p>
     </div>
 
     <div class="reveal-stagger grid gap-5 sm:grid-cols-3">
@@ -169,24 +255,9 @@ const workVariants = ['work1', 'work2', 'work3', 'work4', 'work5', 'work6'] as c
             <div class="mt-5 flex items-center gap-2">
               <span
                 class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-bold"
-                style:list={[
-                  tool.status === 'ready'
-                    ? 'background-color: #E4F4EA; color: #1B634D;'
-                    : tool.status === 'wip'
-                      ? 'background-color: #FDF0D8; color: #A15C07;'
-                      : 'background-color: #F0EEE6; color: #7D8A83;',
-                ]}
+                style={statusStyles[tool.status]}
               >
-                <span
-                  class="h-1.5 w-1.5 rounded-full"
-                  style:list={[
-                    tool.status === 'ready'
-                      ? 'background-color: #2A7D62;'
-                      : tool.status === 'wip'
-                        ? 'background-color: #E0A020;'
-                        : 'background-color: #C6C2B6;',
-                  ]}
-                />
+                <span class="h-1.5 w-1.5 rounded-full" style={statusDots[tool.status]} />
                 {STATUS_LABEL[tool.status as keyof typeof STATUS_LABEL]}
               </span>
             </div>
@@ -213,4 +284,251 @@ const workVariants = ['work1', 'work2', 'work3', 'work4', 'work5', 'work6'] as c
       </a>
     </div>
   </section>
+
+  <!-- ============ 手边常用的 ============ -->
+  {
+    HOME.skills.groups.length > 0 && (
+      <section class="pb-14 sm:pb-20">
+        <div class="reveal mb-8">
+          <div class="kicker">{HOME.skills.kicker}</div>
+          <h2 class="section-title">{HOME.skills.title}</h2>
+          {HOME.skills.desc && <p class="section-desc">{HOME.skills.desc}</p>}
+        </div>
+
+        <div class="reveal-stagger grid gap-5 sm:grid-cols-2">
+          {HOME.skills.groups.map((g) => (
+            <div class="soft-card p-6">
+              <div class="flex items-center gap-2.5">
+                <span class="group-mark" aria-hidden="true" />
+                <h3 class="text-[14.5px] font-extrabold">{g.name}</h3>
+              </div>
+              <div class="mt-4 flex flex-wrap gap-2">
+                {g.items.map((it) => (
+                  <span class="tag">{it}</span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+  <!-- ============ 时间线 ============ -->
+  {
+    HOME.timeline.items.length > 0 && (
+      <section class="pb-14 sm:pb-20">
+        <div class="reveal mb-8">
+          <div class="kicker">{HOME.timeline.kicker}</div>
+          <h2 class="section-title">{HOME.timeline.title}</h2>
+          {HOME.timeline.desc && <p class="section-desc">{HOME.timeline.desc}</p>}
+        </div>
+
+        <div class="reveal-stagger relative pl-7">
+          <div class="timeline-rail" aria-hidden="true" />
+          {HOME.timeline.items.map((item) => (
+            <div class="relative pb-8 last:pb-0">
+              <span class="timeline-dot" aria-hidden="true" />
+              <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <span class="year-chip tabular-nums">{item.year}</span>
+                <h3 class="text-[15px] font-extrabold leading-snug">{item.title}</h3>
+              </div>
+              <p class="mt-2 max-w-xl text-[13.5px] leading-relaxed muted">{item.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+  <!-- ============ 结尾 ============ -->
+  <section class="pb-20">
+    <div class="reveal cta-box px-8 py-10 text-center sm:px-12 sm:py-12">
+      <h2 class="text-[1.5rem] font-extrabold tracking-tight sm:text-[1.7rem]">
+        {HOME.cta.title}
+      </h2>
+      <p class="mx-auto mt-3 max-w-md text-[14px] leading-relaxed muted">{HOME.cta.desc}</p>
+      <div class="mt-7 flex flex-wrap items-center justify-center gap-3">
+        <a href="/chat" class="btn-primary arrow-slide">
+          进聊天室
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M5 12h13M13 6l6 6-6 6"></path>
+          </svg>
+        </a>
+        <a href={`mailto:${SOCIAL.email}`} class="btn-ghost">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="3" y="5" width="18" height="14" rx="2.5"></rect>
+            <path d="m3.5 7.5 8.5 5.6 8.5-5.6"></path>
+          </svg>
+          发邮件
+        </a>
+      </div>
+      <p class="mt-5 text-[12.5px] faint">{HOME.cta.note}</p>
+    </div>
+  </section>
 </BaseLayout>
+
+<style>
+  .status-chip {
+    background-color: rgba(255, 255, 255, 0.75);
+    border: 1px solid var(--border);
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text-mid);
+  }
+  .status-pulse {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background-color: #2a9d6b;
+    animation: statusPulse 2.4s ease-in-out infinite;
+  }
+  @keyframes statusPulse {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgba(42, 157, 107, 0.45);
+    }
+    55% {
+      box-shadow: 0 0 0 6px rgba(42, 157, 107, 0);
+    }
+  }
+
+  .kicker {
+    margin-bottom: 8px;
+    font-size: 12.5px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    color: var(--color-ink-400);
+  }
+  .section-title {
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+  @media (min-width: 640px) {
+    .section-title {
+      font-size: 1.9rem;
+    }
+  }
+  .section-desc {
+    margin-top: 10px;
+    max-width: 40rem;
+    font-size: 14px;
+    line-height: 1.65;
+    color: var(--text-mid);
+  }
+
+  .stat-num {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    color: var(--color-ink-700);
+  }
+
+  .now-bullet {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+    background-color: var(--accent-soft);
+    color: var(--color-ink-500);
+  }
+  .now-tag {
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 700;
+    background-color: #fdf0d8;
+    color: #a15c07;
+    white-space: nowrap;
+  }
+
+  .principle-num {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+    border-radius: 11px;
+    font-size: 12.5px;
+    font-weight: 800;
+    background-color: var(--accent-soft);
+    color: var(--color-ink-600);
+  }
+
+  .group-mark {
+    width: 4px;
+    height: 15px;
+    border-radius: 99px;
+    background-color: var(--color-ink-400);
+  }
+
+  .timeline-rail {
+    position: absolute;
+    top: 6px;
+    bottom: 22px;
+    left: 6px;
+    width: 2px;
+    border-radius: 99px;
+    background: linear-gradient(to bottom, var(--color-ink-300) 0%, var(--color-ink-100) 100%);
+  }
+  .timeline-dot {
+    position: absolute;
+    top: 6px;
+    left: -25px;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background-color: #fff;
+    border: 3px solid var(--color-ink-400);
+    box-shadow: 0 0 0 3px rgba(71, 155, 125, 0.12);
+  }
+  .year-chip {
+    padding: 3px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 800;
+    background-color: rgba(255, 255, 255, 0.85);
+    border: 1px solid var(--border);
+    color: var(--text-soft);
+  }
+
+  .cta-box {
+    border-radius: 26px;
+    background:
+      radial-gradient(
+        120% 140% at 12% 0%,
+        rgba(250, 231, 180, 0.5) 0%,
+        rgba(255, 255, 255, 0) 58%
+      ),
+      radial-gradient(
+        120% 140% at 88% 100%,
+        rgba(206, 236, 222, 0.55) 0%,
+        rgba(255, 255, 255, 0) 60%
+      ),
+      #fff;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+  }
+</style>

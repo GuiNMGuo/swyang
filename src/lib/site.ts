@@ -10,6 +10,7 @@ import siteData from '../content/site.json';
 import worksData from '../content/works.json';
 import toolsData from '../content/tools.json';
 import chatData from '../content/chat.json';
+import homeData from '../content/home.json';
 
 export const SITE = {
   title: siteData.title,
@@ -67,21 +68,96 @@ export const STATUS_LABEL = {
 };
 
 /**
- * 留言墙配置。
- * 三项都填好才会真正开启；否则页面显示中文接入指引。
+ * 首页内容
+ * 全部来自 src/content/home.json —— 后台「首页」标签页可以直接改，
+ * 加删条目、改文案都不用碰代码。
  */
+export interface HomeStat {
+  num: string;
+  unit: string;
+  label: string;
+}
+export interface HomeItem {
+  title: string;
+  desc: string;
+  tag?: string;
+}
+export interface HomeGroup {
+  name: string;
+  items: string[];
+}
+export interface HomeTimelineItem {
+  year: string;
+  title: string;
+  desc: string;
+}
+
+type Section<T> = { kicker: string; title: string; desc?: string } & T;
+
+export const HOME = {
+  stats: (homeData.stats ?? []) as HomeStat[],
+  now: homeData.now as Section<{ items: HomeItem[] }>,
+  principles: homeData.principles as Section<{ items: HomeItem[] }>,
+  skills: homeData.skills as Section<{ groups: HomeGroup[] }>,
+  timeline: homeData.timeline as Section<{ items: HomeTimelineItem[] }>,
+  cta: homeData.cta as { title: string; desc: string; note: string },
+};
+
+/**
+ * 聊天室配置
+ *
+ * 安全模型（重要）：
+ * 部署仓库是公开的，所以密码明文**绝不写入仓库**，也不下发到页面。
+ * 每个房间存两样东西：
+ *   salt  —— 建房间时随机生成
+ *   check —— PBKDF2(密码, salt + '|check', 100000 次迭代)
+ * 前端把用户输入的密码按同样算法算一遍，与 check 比对，对得上才放行。
+ * 真正收发消息的频道名走另一路派生（salt + '|chan'），只在浏览器内存里算出来，
+ * 不落盘、不下发。所以光看仓库里的东西推不出频道，也就进不了房间。
+ * 想换密码：重新生成一组 salt/check 即可（后台「聊天室」页有按钮，或跑 scripts/mk_room.js）。
+ */
+export interface ChatRoom {
+  id: string;
+  name: string;
+  desc?: string;
+  /** 建房间时随机生成的一串，公开无妨 */
+  salt: string;
+  /** 密码校验哈希，只用于比对，不能反推出密码 */
+  check: string;
+}
+
+/** 前端拿到的房间信息 */
+export interface PublicRoom {
+  id: string;
+  name: string;
+  desc: string;
+  /** 派生用的盐 */
+  salt: string;
+  /** 校验哈希 */
+  check: string;
+}
+
+const rawRooms = (chatData.rooms ?? []) as ChatRoom[];
+
 export const CHAT = {
-  title: chatData.title ?? '留言墙',
+  title: chatData.title ?? '私密聊天室',
   subtitle: chatData.subtitle ?? '',
-  url: (chatData.supabaseUrl ?? '').replace(/\/+$/, ''),
-  anonKey: chatData.supabaseAnonKey ?? '',
-  bucket: chatData.bucket || 'chat-files',
-  table: chatData.table || 'messages',
-  maxFileMB: Number(chatData.maxFileMB) || 50,
-  maxMessages: Number(chatData.maxMessages) || 100,
+  broker: chatData.broker || 'wss://broker.emqx.io:8084/mqtt',
+  maxFileMB: Number(chatData.maxFileMB) || 20,
+  keepMessages: Number(chatData.keepMessages) || 200,
+  rooms: rawRooms,
+  get publicRooms(): PublicRoom[] {
+    return rawRooms
+      .filter((r) => r && r.id && r.salt && r.check)
+      .map((r) => ({
+        id: r.id,
+        name: r.name,
+        desc: r.desc ?? '',
+        salt: r.salt,
+        check: r.check,
+      }));
+  },
   get enabled(): boolean {
-    return Boolean(
-      chatData.enabled && this.url.startsWith('https://') && this.anonKey.length > 20,
-    );
+    return rawRooms.length > 0;
   },
 };

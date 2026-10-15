@@ -1,11 +1,17 @@
 {
-  "enabled": false,
-  "supabaseUrl": "",
-  "supabaseAnonKey": "",
-  "title": "留言墙",
-  "subtitle": "想说什么就说什么。文字、图片、视频、文件都能传，只保留最新 100 条。",
-  "maxFileMB": 50,
-  "maxMessages": 100,
-  "bucket": "chat-files",
-  "table": "messages"
+  "title": "私密聊天室",
+  "subtitle": "每个房间有自己的密码。消息只留在房间里，随时可以删。",
+  "broker": "wss://broker.emqx.io:8084/mqtt",
+  "maxFileMB": 20,
+  "keepMessages": 200,
+  "rooms": [
+    {
+      "id": "demo",
+      "name": "公共演示间",
+      "desc": "随便进，密码是 1234，先看看效果。",
+      "salt": "fd9929dd0be5b89aa66747eab64efcd4",
+      "check": "184e734100c00994769ba52c51f3c6bd"
+    }
+  ],
+  "note": "房间在 /admin 后台「聊天房间」里建。密码只存哈希，忘了就重设一个。"
 }

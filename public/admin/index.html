@@ -112,6 +112,41 @@
         padding: 14px 16px;
         margin: 0 0 22px;
       }
+      .steps summary {
+        cursor: pointer;
+        font-weight: 700;
+        color: var(--ink-700);
+        list-style: none;
+      }
+      .steps summary::-webkit-details-marker {
+        display: none;
+      }
+      .steps summary::after {
+        content: ' ▾';
+        font-size: 11px;
+        color: var(--text-soft);
+      }
+      .steps[open] summary::after {
+        content: ' ▴';
+      }
+      .badge-ok,
+      .badge-warn {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 11px;
+        border-radius: 999px;
+        font-size: 11.5px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+      .badge-ok {
+        background: var(--ok-bg);
+        color: var(--ok-fg);
+      }
+      .badge-warn {
+        background: var(--warn-bg);
+        color: var(--warn-fg);
+      }
       .steps ol {
         margin: 0;
         padding-left: 20px;
@@ -507,27 +542,38 @@
       <section id="gate" class="gate">
         <div class="badge">追</div>
         <h1>内容管理后台</h1>
-        <p>改完点保存，网站自动更新。不用装任何软件，手机也能用。</p>
+        <p>改文字、换图片、建聊天房间。保存后网站自动更新，不用装任何软件。</p>
 
-        <div class="steps">
-          <ol>
-            <li>
-              打开
-              <a
-                href="https://github.com/settings/personal-access-tokens/new"
-                target="_blank"
-                rel="noopener"
-                >github.com/settings/personal-access-tokens/new</a
-              >
-            </li>
-            <li>Repository access 选 <b>Only select repositories</b> → 勾 <code>swyang</code></li>
-            <li>
-              Permissions → Repository permissions →
-              <b>Contents</b> 设为 <b>Read and write</b>
-            </li>
-            <li>点 Generate token，复制那串 <code>github_pat_...</code> 粘到下面</li>
-          </ol>
+        <div class="note info" style="margin: 0 0 20px">
+          <b>第一次用？点下面的按钮，一路点到底就行</b><br />
+          按钮会打开一个已经填好权限的页面，你只需要点最下面那个绿色按钮，把生成的
+          <code>github_pat_...</code> 复制回来。
         </div>
+
+        <a
+          class="btn btn-primary"
+          id="makeToken"
+          style="width: 100%; justify-content: center; text-decoration: none; margin-bottom: 22px"
+          target="_blank"
+          rel="noopener"
+          href="https://github.com/settings/personal-access-tokens/new?name=%E7%BD%91%E7%AB%99%E5%90%8E%E5%8F%B0&description=%E7%94%A8%E4%BA%8E%E5%9C%A8%E7%BA%BF%E7%BC%96%E8%BE%91%E7%AB%99%E7%82%B9%E5%86%85%E5%AE%B9&expires_in=90&contents=write"
+        >
+          一键打开「生成令牌」页面 ↗
+        </a>
+
+        <details class="steps">
+          <summary>打开后要做什么？（点开看一眼，30 秒）</summary>
+          <ol style="margin-top: 10px">
+            <li><b>Repository access</b> 选 <b>Only select repositories</b>，勾上 <code>swyang</code></li>
+            <li>确认 <b>Contents</b> 已经是 <b>Read and write</b>（模板已填好，一般不用动）</li>
+            <li>滑到最下面点绿色的 <b>Generate token</b></li>
+            <li>复制那串 <code>github_pat_...</code>，回到这个页面粘到下面</li>
+          </ol>
+          <p style="margin: 10px 0 0; font-size: 12.5px">
+            令牌相当于一把只对这一个仓库有效的钥匙，存在你自己的浏览器里，不会上传到任何地方。
+            到期了重新生成一个即可。
+          </p>
+        </details>
 
         <label class="field">
           <span>GitHub 访问令牌</span>
@@ -537,7 +583,7 @@
         <label class="field" style="display: flex; gap: 9px; align-items: center; margin-bottom: 20px">
           <input id="remember" type="checkbox" checked style="width: auto" />
           <span style="margin: 0; font-size: 13.5px; color: var(--text-mid); font-weight: 600"
-            >在这台设备记住（存在本地浏览器，不上传）</span
+            >在这台设备记住（下次自动登录）</span
           >
         </label>
 
@@ -560,14 +606,19 @@
         </div>
 
         <div class="tabs">
-          <button data-tab="site" class="on">站点信息</button>
-          <button data-tab="works">作品</button>
+          <button data-tab="works" class="on">作品</button>
+          <button data-tab="chat">聊天房间</button>
+          <button data-tab="site">站点信息</button>
           <button data-tab="tools">工具</button>
-          <button data-tab="chat">留言墙</button>
+          <button data-tab="home">首页板块</button>
+        </div>
+
+        <div class="note info" style="margin-bottom: 22px">
+          左侧标签是分类，改完右下角会冒出一个绿色按钮，点它保存并发布。<b>约 1~2 分钟后</b>网站自动更新。
         </div>
 
         <!-- ---------- 站点信息 ---------- -->
-        <div data-panel="site">
+        <div data-panel="site" class="hide">
           <div class="card">
             <div class="card-head">
               <span class="idx">A</span>
@@ -601,9 +652,10 @@
         </div>
 
         <!-- ---------- 作品 ---------- -->
-        <div data-panel="works" class="hide">
+        <div data-panel="works">
           <div class="note info">
-            首页只显示<b>前 3 个</b>作品，「作品」页面显示全部。拖动不了顺序，用卡片右上角的 ↑ ↓ 调整。
+            首页显示<b>前 3 个</b>，「作品」页面显示全部。用卡片右上角的 ↑ ↓ 调整顺序。
+            图片点「上传图片」直接选本地文件就行，会自动传上去。
           </div>
           <div id="workList"></div>
           <button class="btn btn-soft" id="addWork">+ 添加一个作品</button>
@@ -616,70 +668,129 @@
           <button class="btn btn-soft" id="addTool">+ 添加一个工具</button>
         </div>
 
-        <!-- ---------- 留言墙 ---------- -->
+        <!-- ---------- 首页板块 ---------- -->
+        <div data-panel="home" class="hide">
+          <div class="note info">
+            首页从上往下依次是：<b>数字</b> → 最近在做 → 做事方式 → 手边常用的 → 时间线。
+            这里只调后面这几块，改完立刻能在首页看到。
+          </div>
+
+          <div class="card">
+            <div class="card-head"><span class="idx">1</span><h2>数字</h2></div>
+            <p class="hint" style="margin: -4px 0 14px">
+              首页头像下面那一排。数字和单位分开填，比如「6」+「个」，下面写说明。
+            </p>
+            <div id="statList"></div>
+            <button class="btn btn-soft" id="addStat">+ 加一个数字</button>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><span class="idx">2</span><h2>最近在做</h2></div>
+            <div class="grid2">
+              <label class="field"><span>小标题</span><input id="n-kicker" type="text" /></label>
+              <label class="field"><span>大标题</span><input id="n-title" type="text" /></label>
+            </div>
+            <label class="field"><span>说明</span><input id="n-desc" type="text" /></label>
+            <div id="nowList"></div>
+            <button class="btn btn-soft" id="addNow">+ 加一条</button>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><span class="idx">3</span><h2>做事方式</h2></div>
+            <div class="grid2">
+              <label class="field"><span>小标题</span><input id="p-kicker" type="text" /></label>
+              <label class="field"><span>大标题</span><input id="p-title" type="text" /></label>
+            </div>
+            <label class="field"><span>说明</span><input id="p-desc" type="text" /></label>
+            <div id="prinList"></div>
+            <button class="btn btn-soft" id="addPrin">+ 加一条</button>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><span class="idx">4</span><h2>手边常用的</h2></div>
+            <div class="grid2">
+              <label class="field"><span>小标题</span><input id="k-kicker" type="text" /></label>
+              <label class="field"><span>大标题</span><input id="k-title" type="text" /></label>
+            </div>
+            <div id="groupList"></div>
+            <button class="btn btn-soft" id="addGroup">+ 加一组</button>
+            <p class="hint" style="margin: 12px 0 0">一组一行的技能，用逗号分隔。</p>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><span class="idx">5</span><h2>时间线</h2></div>
+            <div class="grid2">
+              <label class="field"><span>小标题</span><input id="t-kicker" type="text" /></label>
+              <label class="field"><span>大标题</span><input id="t-title" type="text" /></label>
+            </div>
+            <div id="tlList"></div>
+            <button class="btn btn-soft" id="addTl">+ 加一段</button>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><span class="idx">6</span><h2>页面最下面那块</h2></div>
+            <label class="field"><span>标题</span><input id="ct-title" type="text" /></label>
+            <label class="field"><span>说明</span><input id="ct-desc" type="text" /></label>
+            <label class="field"><span>小字备注</span><input id="ct-note" type="text" /></label>
+          </div>
+        </div>
+
+        <!-- ---------- 聊天房间 ---------- -->
         <div data-panel="chat" class="hide">
+          <div class="note info">
+            在这里给每个房间起个名字、设一个密码。<b>密码不会存到网站里</b>，只存一段校验值，
+            所以忘了密码没法找回，重设一个就行。把「房间名 + 密码」告诉该看到的人，他们才能进去。
+          </div>
+
           <div class="card">
             <div class="card-head">
               <span class="idx">C</span>
-              <h2>留言墙开关与文案</h2>
+              <h2>聊天室文案</h2>
             </div>
-            <label class="field"
-              ><span>是否开启留言墙</span>
-              <select id="c-enabled">
-                <option value="false">关闭（页面显示接入指引）</option>
-                <option value="true">开启</option>
-              </select>
-            </label>
             <div class="grid2">
               <label class="field"><span>标题</span><input id="c-title" type="text" /></label>
               <label class="field"
-                ><span>最多保留多少条</span><input id="c-maxMessages" type="number" min="10" max="1000"
+                ><span>每个房间保留多少条消息</span
+                ><input id="c-keepMessages" type="number" min="20" max="2000"
               /></label>
             </div>
-            <label class="field"><span>说明文字</span><textarea id="c-subtitle"></textarea></label>
+            <label class="field"><span>页面上的说明文字</span><textarea id="c-subtitle"></textarea></label>
             <div class="grid2">
               <label class="field"
-                ><span>单个文件上限（MB）</span><input id="c-maxFileMB" type="number" min="1" max="500"
+                ><span>单个图片上限（MB）</span><input id="c-maxFileMB" type="number" min="1" max="50"
               /></label>
-              <label class="field"><span>存储桶名称</span><input id="c-bucket" type="text" /></label>
+              <label class="field"
+                ><span>实时通道地址</span><input id="c-broker" type="text"
+              /></label>
             </div>
-            <label class="field"><span>数据表名称</span><input id="c-table" type="text" /></label>
+            <div class="note warn" style="margin-bottom: 0">
+              实时通道那一栏<b>不要改</b>，除非你很确定在做什么。改错了房间就连不上。
+            </div>
           </div>
 
           <div class="card">
             <div class="card-head">
               <span class="idx">D</span>
-              <h2>Supabase 连接（开启留言墙必填）</h2>
+              <h2>房间列表</h2>
             </div>
-            <div class="note info">
-              <b>还没配置过？</b>照着下面做，全程免费，大约 5 分钟：<br />
-              1. 打开 <a href="https://supabase.com" target="_blank" rel="noopener">supabase.com</a> 用
-              GitHub 登录 → New project（区域选新加坡最快）<br />
-              2. 左侧 <b>SQL Editor</b> → New query → 把下面整段粘进去 → Run<br />
-              3. 左侧 <b>Project Settings → API</b>，复制 <b>Project URL</b> 和
-              <b>anon public</b> 两个值，填到下面对应框<br />
-              4. 上面「是否开启留言墙」选「开启」，然后点保存
-            </div>
-            <label class="field"><span>Supabase Project URL</span><input id="c-supabaseUrl" type="text" placeholder="https://xxxx.supabase.co" /></label>
-            <label class="field"><span>Supabase anon public key</span><textarea id="c-supabaseAnonKey" placeholder="eyJhbGciOi..."></textarea></label>
+            <div id="roomList"></div>
+            <button class="btn btn-soft" id="addRoom">+ 新建一个房间</button>
+          </div>
 
-            <div class="note info" style="margin-top: 6px">
-              <b>第 2 步要粘贴的建表 SQL：</b>
-              <pre
-                id="sqlBox"
-                style="
-                  margin: 10px 0 8px;
-                  padding: 13px 14px;
-                  background: #0d3d30;
-                  color: #cfe7dc;
-                  border-radius: 11px;
-                  overflow: auto;
-                  font-size: 12px;
-                  line-height: 1.65;
-                  max-height: 300px;
-                "
-              ></pre>
-              <button class="btn btn-soft btn-sm" id="copySql">复制这段 SQL</button>
+          <div class="card">
+            <div class="card-head">
+              <span class="idx">E</span>
+              <h2>怎么用</h2>
+            </div>
+            <div class="note info" style="margin-bottom: 0">
+              1. 上面新建房间，填<b>房间名</b>和<b>密码</b>，点保存并发布<br />
+              2. 等 1~2 分钟，打开网站上的「留言」页，会看到这个房间的卡片<br />
+              3. 点卡片 → 输密码 → 进去聊天。密码对了才会连上这个房间<br />
+              4. 房间里的消息存在各自浏览器里，点自己消息右上角的「×」可以删掉<br />
+              <span style="display: block; margin-top: 8px">
+                想换密码：点房间卡片上的「重设密码」，输入新密码，再保存发布。
+                旧密码立刻就进不去了。
+              </span>
             </div>
           </div>
         </div>
@@ -710,57 +821,49 @@
         works: 'src/content/works.json',
         tools: 'src/content/tools.json',
         chat: 'src/content/chat.json',
+        home: 'src/content/home.json',
       };
 
-      var SQL = [
-        '-- 留言墙：数据表',
-        'create table if not exists public.messages (',
-        '  id bigint generated by default as identity primary key,',
-        '  created_at timestamptz not null default now(),',
-        '  nickname text not null default \'访客\',',
-        '  body text not null default \'\',',
-        '  kind text not null default \'text\',   -- text | image | video | file',
-        '  file_url text,',
-        '  file_name text,',
-        '  file_size bigint,',
-        '  file_type text',
-        ');',
-        '',
-        'create index if not exists messages_created_at_idx on public.messages (created_at desc);',
-        '',
-        '-- 开启行级安全',
-        'alter table public.messages enable row level security;',
-        '',
-        '-- 任何人都能读',
-        'drop policy if exists "read all" on public.messages;',
-        'create policy "read all" on public.messages for select using (true);',
-        '',
-        '-- 任何人都能写（留言墙是公开的）',
-        'drop policy if exists "insert all" on public.messages;',
-        'create policy "insert all" on public.messages for insert with check (true);',
-        '',
-        '-- 允许删除：超出 100 条时前端会自动清理旧的',
-        'drop policy if exists "delete all" on public.messages;',
-        'create policy "delete all" on public.messages for delete using (true);',
-        '',
-        '-- 存储桶：放图片/视频/文件',
-        'insert into storage.buckets (id, name, public)',
-        'values (\'chat-files\', \'chat-files\', true)',
-        'on conflict (id) do update set public = true;',
-        '',
-        '-- 存储桶策略：公开读、公开写',
-        'drop policy if exists "chat files read" on storage.objects;',
-        'create policy "chat files read" on storage.objects',
-        '  for select using (bucket_id = \'chat-files\');',
-        '',
-        'drop policy if exists "chat files write" on storage.objects;',
-        'create policy "chat files write" on storage.objects',
-        '  for insert with check (bucket_id = \'chat-files\');',
-        '',
-        'drop policy if exists "chat files delete" on storage.objects;',
-        'create policy "chat files delete" on storage.objects',
-        '  for delete using (bucket_id = \'chat-files\');',
-      ].join('\n');
+      /* ============================================================
+         房间密码：只存校验值，不存明文
+         —— 仓库是公开的，明文密码写进去等于没设密码。
+            这里生成一段随机 salt，密码和 salt 一起算 PBKDF2，
+            只把 salt 和结果（check）存起来。页面端用同样算法比对。
+         ============================================================ */
+      var ROOM_ITER = 100000;
+
+      function toHex(buf) {
+        var a = new Uint8Array(buf);
+        var s = '';
+        for (var i = 0; i < a.length; i++) s += a[i].toString(16).padStart(2, '0');
+        return s;
+      }
+
+      async function pbkdf2Hex(password, salt, info, bits) {
+        var enc = new TextEncoder();
+        var key = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, [
+          'deriveBits',
+        ]);
+        var out = await crypto.subtle.deriveBits(
+          { name: 'PBKDF2', salt: enc.encode(salt + '|' + info), iterations: ROOM_ITER, hash: 'SHA-256' },
+          key,
+          bits || 128
+        );
+        return toHex(out);
+      }
+
+      function randomSalt() {
+        var a = new Uint8Array(16);
+        crypto.getRandomValues(a);
+        return toHex(a.buffer);
+      }
+
+      /** 由「房间名」生成一个稳定的 id（中文名也能用） */
+      async function roomIdFrom(name) {
+        var enc = new TextEncoder();
+        var h = await crypto.subtle.digest('SHA-256', enc.encode('room|' + name));
+        return toHex(h).slice(0, 12);
+      }
 
       /* ============================================================
          工具函数
@@ -770,7 +873,7 @@
       };
       var token = '';
       var sha = {};
-      var data = { site: {}, works: {}, tools: {}, chat: {} };
+      var data = { site: {}, works: {}, tools: {}, chat: {}, home: {} };
       var original = {};
       var user = {};
       var publishing = false;
@@ -863,7 +966,7 @@
             sha[k] = j.sha;
             data[k] = JSON.parse(b64ToUtf8(j.content));
           }
-          original[k] = JSON.stringify(data[k]);
+          
         }
       }
 
@@ -898,31 +1001,369 @@
       }
 
       function readChat() {
+        var rooms = [];
+        Array.prototype.forEach.call($('roomList').children, function (card) {
+          var o = {};
+          card.querySelectorAll('[data-rf]').forEach(function (inp) {
+            o[inp.getAttribute('data-rf')] = inp.value.trim();
+          });
+          // 密码只在填了新值时重算；没填就沿用原来的 salt/check
+          o.salt = card.getAttribute('data-salt') || '';
+          o.check = card.getAttribute('data-check') || '';
+          if (o.salt && o.check && o.name) {
+            rooms.push({
+              id: o.id || '',
+              name: o.name,
+              desc: o.desc || '',
+              salt: o.salt,
+              check: o.check,
+            });
+          }
+        });
+
         return {
-          enabled: $('c-enabled').value === 'true',
-          supabaseUrl: $('c-supabaseUrl').value.trim(),
-          supabaseAnonKey: $('c-supabaseAnonKey').value.trim(),
           title: $('c-title').value.trim(),
           subtitle: $('c-subtitle').value.trim(),
-          maxFileMB: Number($('c-maxFileMB').value) || 50,
-          maxMessages: Number($('c-maxMessages').value) || 100,
-          bucket: $('c-bucket').value.trim() || 'chat-files',
-          table: $('c-table').value.trim() || 'messages',
+          broker: $('c-broker').value.trim() || 'wss://broker.emqx.io:8084/mqtt',
+          maxFileMB: Number($('c-maxFileMB').value) || 20,
+          keepMessages: Number($('c-keepMessages').value) || 200,
+          rooms: rooms,
+          note: '房间在 /admin 后台「聊天房间」里建。密码只存哈希，忘了就重设一个。',
         };
       }
 
       function fillChat() {
         var c = data.chat || {};
-        $('c-enabled').value = c.enabled ? 'true' : 'false';
         $('c-title').value = c.title || '';
         $('c-subtitle').value = c.subtitle || '';
-        $('c-maxFileMB').value = c.maxFileMB || 50;
-        $('c-maxMessages').value = c.maxMessages || 100;
-        $('c-bucket').value = c.bucket || 'chat-files';
-        $('c-table').value = c.table || 'messages';
-        $('c-supabaseUrl').value = c.supabaseUrl || '';
-        $('c-supabaseAnonKey').value = c.supabaseAnonKey || '';
+        $('c-broker').value = c.broker || 'wss://broker.emqx.io:8084/mqtt';
+        $('c-maxFileMB').value = c.maxFileMB || 20;
+        $('c-keepMessages').value = c.keepMessages || 200;
+
+        var list = $('roomList');
+        list.innerHTML = '';
+        (c.rooms || []).forEach(function (r) {
+          list.appendChild(roomCard(r));
+        });
       }
+
+      /* ---------- 聊天房间卡片 ---------- */
+      function roomCard(r) {
+        var d = document.createElement('div');
+        d.className = 'card';
+        d.style.marginBottom = '14px';
+        d.setAttribute('data-salt', r.salt || '');
+        d.setAttribute('data-check', r.check || '');
+        d.innerHTML =
+          '<div class="card-head">' +
+          '<span class="idx">·</span>' +
+          '<h2>房间</h2><span class="sp"></span>' +
+          '<span class="badge-ok" data-state></span>' +
+          '<button class="btn btn-ghost btn-sm" data-act="pw">重设密码</button>' +
+          '<button class="btn btn-danger" data-act="del">删除</button>' +
+          '</div>' +
+          '<div class="grid2">' +
+          '<label class="field"><span>房间名（别人看到的名字）</span>' +
+          '<input type="text" data-rf="name" placeholder="家人 / 工作室 / 老同学" /></label>' +
+          '<label class="field"><span>密码（留空表示不改）</span>' +
+          '<input type="password" data-rf="pw" placeholder="设一个只有自己人知道的" autocomplete="new-password" /></label>' +
+          '</div>' +
+          '<label class="field"><span>卡片上的一句话说明（可留空）</span>' +
+          '<input type="text" data-rf="desc" placeholder="随便进，密码是 1234" /></label>' +
+          '<input type="hidden" data-rf="id" />';
+
+        d.querySelector('[data-rf="name"]').value = r.name || '';
+        d.querySelector('[data-rf="desc"]').value = r.desc || '';
+        d.querySelector('[data-rf="id"]').value = r.id || '';
+
+        var stateEl = d.querySelector('[data-state]');
+        function refreshState() {
+          if (r.salt && r.check) {
+            stateEl.className = 'badge-ok';
+            stateEl.textContent = '密码已设好';
+          } else {
+            stateEl.className = 'badge-warn';
+            stateEl.textContent = '还没设密码';
+          }
+        }
+        refreshState();
+
+        // 密码输入 → 立即算校验值（防抖，10 万次迭代不便宜）
+        var pwInput = d.querySelector('[data-rf="pw"]');
+        var timer = 0;
+        pwInput.addEventListener('input', function () {
+          clearTimeout(timer);
+          var v = pwInput.value;
+          if (!v) return;
+          stateEl.className = 'badge-warn';
+          stateEl.textContent = '正在算…';
+          timer = setTimeout(async function () {
+            var salt = r.salt || randomSalt();
+            var check = await pbkdf2Hex(v, salt, 'check');
+            r.salt = salt;
+            r.check = check;
+            d.setAttribute('data-salt', salt);
+            d.setAttribute('data-check', check);
+            refreshState();
+            touch();
+          }, 420);
+        });
+
+        // 房间名变了 → 同步 id
+        var nameInput = d.querySelector('[data-rf="name"]');
+        nameInput.addEventListener('change', async function () {
+          if (!nameInput.value.trim()) return;
+          var id = await roomIdFrom(nameInput.value.trim());
+          if (!r.id) {
+            r.id = id;
+            d.querySelector('[data-rf="id"]').value = id;
+          }
+          touch();
+        });
+
+        d.querySelector('[data-act="del"]').addEventListener('click', function () {
+          if (!confirm('删除这个房间？里面的人会立刻进不去。')) return;
+          d.remove();
+          touch();
+        });
+
+        d.querySelector('[data-act="pw"]').addEventListener('click', function () {
+          pwInput.focus();
+          pwInput.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        });
+
+        d.addEventListener('input', touch);
+        return d;
+      }
+
+
+      /* ============================================================
+         首页板块
+         ============================================================ */
+
+      function itemCard(fields) {
+        var d = document.createElement('div');
+        d.className = 'card';
+        d.style.marginBottom = '12px';
+        var html =
+          '<div class="card-head"><span class="idx">·</span><h2>一条</h2>' +
+          '<span class="sp"></span>' +
+          '<button class="btn btn-ghost btn-sm" data-act="up">\u2191</button>' +
+          '<button class="btn btn-ghost btn-sm" data-act="down">\u2193</button>' +
+          '<button class="btn btn-danger" data-act="del">\u5220\u9664</button></div>';
+
+        var LABELS = {
+          title: '\u6807\u9898',
+          desc: '\u8bf4\u660e',
+          tag: '\u53f3\u4e0a\u89d2\u5c0f\u6807\u7b7e',
+          year: '\u5e74\u4efd',
+        };
+
+        fields.forEach(function (f) {
+          var label = LABELS[f] || f;
+          if (f === 'desc') {
+            html +=
+              '<label class="field"><span>' + label +
+              '</span><textarea data-hf="desc"></textarea></label>';
+          } else {
+            html +=
+              '<label class="field"><span>' + label +
+              '</span><input type="text" data-hf="' + f + '" /></label>';
+          }
+        });
+        d.innerHTML = html;
+
+        d.querySelector('[data-act="del"]').addEventListener('click', function () {
+          d.remove();
+          touch();
+        });
+        d.querySelector('[data-act="up"]').addEventListener('click', function () {
+          if (d.previousElementSibling) {
+            d.parentNode.insertBefore(d, d.previousElementSibling);
+            touch();
+          }
+        });
+        d.querySelector('[data-act="down"]').addEventListener('click', function () {
+          if (d.nextElementSibling) {
+            d.parentNode.insertBefore(d.nextElementSibling, d);
+            touch();
+          }
+        });
+        d.addEventListener('input', touch);
+        return d;
+      }
+
+      function fillList(listId, items, fields) {
+        var list = $(listId);
+        list.innerHTML = '';
+        (items || []).forEach(function (it) {
+          var c = itemCard(fields);
+          fields.forEach(function (f) {
+            var el = c.querySelector('[data-hf="' + f + '"]');
+            if (el) el.value = it[f] || '';
+          });
+          list.appendChild(c);
+        });
+      }
+
+      function fillHome() {
+        var h = data.home || {};
+
+        /* 数字 */
+        var sl = $('statList');
+        sl.innerHTML = '';
+        (h.stats || []).forEach(function (s) {
+          var d = document.createElement('div');
+          d.className = 'card';
+          d.style.marginBottom = '12px';
+          d.innerHTML =
+            '<div class="card-head"><span class="idx">\u00b7</span><h2>\u6570\u5b57</h2>' +
+            '<span class="sp"></span>' +
+            '<button class="btn btn-danger" data-act="del">\u5220\u9664</button></div>' +
+            '<div class="grid2">' +
+            '<label class="field"><span>\u6570\u503c</span><input type="text" data-sf="num" /></label>' +
+            '<label class="field"><span>\u5355\u4f4d</span>' +
+            '<input type="text" data-sf="unit" placeholder="\u4e2a / % / \u5143" /></label>' +
+            '</div>' +
+            '<label class="field"><span>\u4e0b\u65b9\u8bf4\u660e</span>' +
+            '<input type="text" data-sf="label" /></label>';
+          d.querySelector('[data-sf="num"]').value = s.num || '';
+          d.querySelector('[data-sf="unit"]').value = s.unit || '';
+          d.querySelector('[data-sf="label"]').value = s.label || '';
+          d.querySelector('[data-act="del"]').addEventListener('click', function () {
+            d.remove();
+            touch();
+          });
+          d.addEventListener('input', touch);
+          sl.appendChild(d);
+        });
+
+        /* 各段小标题 */
+        var pairs = [
+          ['n-kicker', (h.now || {}).kicker],
+          ['n-title', (h.now || {}).title],
+          ['n-desc', (h.now || {}).desc],
+          ['p-kicker', (h.principles || {}).kicker],
+          ['p-title', (h.principles || {}).title],
+          ['p-desc', (h.principles || {}).desc],
+          ['k-kicker', (h.skills || {}).kicker],
+          ['k-title', (h.skills || {}).title],
+          ['t-kicker', (h.timeline || {}).kicker],
+          ['t-title', (h.timeline || {}).title],
+          ['ct-title', (h.cta || {}).title],
+          ['ct-desc', (h.cta || {}).desc],
+          ['ct-note', (h.cta || {}).note],
+        ];
+        pairs.forEach(function (pr) {
+          var el = $(pr[0]);
+          if (el) el.value = pr[1] || '';
+        });
+
+        /* 条目列表 */
+        fillList('nowList', (h.now || {}).items, ['title', 'desc', 'tag']);
+        fillList('prinList', (h.principles || {}).items, ['title', 'desc']);
+        fillList('tlList', (h.timeline || {}).items, ['year', 'title', 'desc']);
+
+        /* 技能分组 */
+        var gl = $('groupList');
+        gl.innerHTML = '';
+        ((h.skills || {}).groups || []).forEach(function (g) {
+          var d = document.createElement('div');
+          d.className = 'card';
+          d.style.marginBottom = '12px';
+          d.innerHTML =
+            '<div class="card-head"><span class="idx">\u00b7</span><h2>\u5206\u7ec4</h2>' +
+            '<span class="sp"></span>' +
+            '<button class="btn btn-danger" data-act="del">\u5220\u9664</button></div>' +
+            '<label class="field"><span>\u5206\u7ec4\u540d</span>' +
+            '<input type="text" data-gf="name" placeholder="\u5199\u4ee3\u7801 / \u505a\u89c6\u9891" /></label>' +
+            '<label class="field"><span>\u6280\u80fd\uff08\u9017\u53f7\u5206\u9694\uff09</span>' +
+            '<input type="text" data-gf="items" placeholder="Python, TypeScript, Astro" /></label>';
+          d.querySelector('[data-gf="name"]').value = g.name || '';
+          d.querySelector('[data-gf="items"]').value = (g.items || []).join(', ');
+          d.querySelector('[data-act="del"]').addEventListener('click', function () {
+            d.remove();
+            touch();
+          });
+          d.addEventListener('input', touch);
+          gl.appendChild(d);
+        });
+      }
+
+      function readHome() {
+        var stats = [];
+        Array.prototype.forEach.call($('statList').children, function (c) {
+          var num = c.querySelector('[data-sf="num"]').value.trim();
+          var label = c.querySelector('[data-sf="label"]').value.trim();
+          if (!num && !label) return;
+          stats.push({
+            num: num,
+            unit: c.querySelector('[data-sf="unit"]').value.trim(),
+            label: label,
+          });
+        });
+
+        function itemsOf(listId, fields) {
+          var out = [];
+          Array.prototype.forEach.call($(listId).children, function (c) {
+            var o = {};
+            var any = false;
+            fields.forEach(function (f) {
+              var el = c.querySelector('[data-hf="' + f + '"]');
+              var v = el ? el.value.trim() : '';
+              o[f] = v;
+              if (v) any = true;
+            });
+            if (any) out.push(o);
+          });
+          return out;
+        }
+
+        function splitList(raw) {
+          return String(raw || '')
+            .split(/[,\uff0c]/)
+            .map(function (x) { return x.trim(); })
+            .filter(Boolean);
+        }
+
+        var groups = [];
+        Array.prototype.forEach.call($('groupList').children, function (c) {
+          var name = c.querySelector('[data-gf="name"]').value.trim();
+          if (!name) return;
+          groups.push({
+            name: name,
+            items: splitList(c.querySelector('[data-gf="items"]').value),
+          });
+        });
+
+        function section(kickerId, titleId, descId, listId, fields) {
+          var o = {
+            kicker: $(kickerId).value.trim(),
+            title: $(titleId).value.trim(),
+            items: itemsOf(listId, fields),
+          };
+          if (descId) o.desc = $(descId).value.trim();
+          return o;
+        }
+
+        return {
+          stats: stats,
+          now: section('n-kicker', 'n-title', 'n-desc', 'nowList', ['title', 'desc', 'tag']),
+          principles: section('p-kicker', 'p-title', 'p-desc', 'prinList', ['title', 'desc']),
+          skills: {
+            kicker: $('k-kicker').value.trim(),
+            title: $('k-title').value.trim(),
+            groups: groups,
+          },
+          timeline: section('t-kicker', 't-title', null, 'tlList', ['year', 'title', 'desc']),
+          cta: {
+            title: $('ct-title').value.trim(),
+            desc: $('ct-desc').value.trim(),
+            note: $('ct-note').value.trim(),
+          },
+        };
+      }
+
 
       /* ---------- 作品 ---------- */
       function workCard(w, i) {
@@ -1197,14 +1638,43 @@
           works: readWorks(),
           tools: readTools(),
           chat: readChat(),
+          home: readHome(),
         };
+      }
+
+      /**
+       * 语义化比较两个 JSON 结构是否等价。
+       * 为什么不用 JSON.stringify 直接比字符串：对象键的顺序、末尾空行、
+       * 文本域里的多余空格都会让字符串对不上，结果明明没改却提示"有改动"，
+       * 一保存就把整份文件重新提交一遍。
+       */
+      function normalize(v) {
+        if (Array.isArray(v)) return v.map(normalize);
+        if (v && typeof v === 'object') {
+          var out = {};
+          Object.keys(v)
+            .sort()
+            .forEach(function (k) {
+              // 空字符串和 undefined 一律当成「没填」
+              var val = v[k];
+              if (val === undefined || val === null || val === '') return;
+              out[k] = normalize(val);
+            });
+          return out;
+        }
+        if (typeof v === 'string') return v.trim();
+        return v;
+      }
+
+      function sameJSON(a, b) {
+        return JSON.stringify(normalize(a)) === JSON.stringify(normalize(b));
       }
 
       function dirtyKeys() {
         var cur = current();
         var out = [];
         Object.keys(FILES).forEach(function (k) {
-          if (JSON.stringify(cur[k]) !== original[k]) out.push(k);
+          if (!sameJSON(cur[k], data[k])) out.push(k);
         });
         return out;
       }
@@ -1236,7 +1706,13 @@
 
         try {
           var cur = current();
-          var labels = { site: '站点信息', works: '作品列表', tools: '工具列表', chat: '留言墙设置' };
+          var labels = {
+            site: '站点信息',
+            works: '作品列表',
+            tools: '工具列表',
+            chat: '聊天房间',
+            home: '首页板块',
+          };
           var names = keys.map(function (k) {
             return labels[k];
           });
@@ -1261,7 +1737,8 @@
             }
             var j = await r.json();
             sha[k] = j.content.sha;
-            original[k] = JSON.stringify(cur[k]);
+            // 提交成功后把当前值记为新的基准，否则会一直显示"有改动未保存"
+            data[k] = cur[k];
             log('✓ ' + names[i] + ' 已提交');
           }
 
@@ -1307,9 +1784,9 @@
 
         fillSite();
         fillChat();
+        fillHome();
         renderWorks();
         renderTools();
-        $('sqlBox').textContent = SQL;
         touch();
       }
 
@@ -1374,31 +1851,75 @@
 
       $('publish').addEventListener('click', publish);
 
-      $('copySql').addEventListener('click', async function () {
-        try {
-          await navigator.clipboard.writeText(SQL);
-          $('copySql').textContent = '已复制 ✓';
-          setTimeout(function () {
-            $('copySql').textContent = '复制这段 SQL';
-          }, 2200);
-        } catch (e) {
-          var ta = document.createElement('textarea');
-          ta.value = SQL;
-          document.body.appendChild(ta);
-          ta.select();
-          document.execCommand('copy');
-          ta.remove();
-          $('copySql').textContent = '已复制 ✓';
-          setTimeout(function () {
-            $('copySql').textContent = '复制这段 SQL';
-          }, 2200);
-        }
+      /* ---------- 新增条目按钮 ---------- */
+      function addTo(listId, card) {
+        var list = $(listId);
+        list.appendChild(card);
+        touch();
+        list.lastElementChild.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }
+
+      $('addRoom').addEventListener('click', function () {
+        addTo('roomList', roomCard({}));
+      });
+      $('addStat').addEventListener('click', function () {
+        var d = document.createElement('div');
+        d.className = 'card';
+        d.style.marginBottom = '12px';
+        d.innerHTML =
+          '<div class="card-head"><span class="idx">\u00b7</span><h2>\u6570\u5b57</h2>' +
+          '<span class="sp"></span>' +
+          '<button class="btn btn-danger" data-act="del">\u5220\u9664</button></div>' +
+          '<div class="grid2">' +
+          '<label class="field"><span>\u6570\u503c</span><input type="text" data-sf="num" /></label>' +
+          '<label class="field"><span>\u5355\u4f4d</span>' +
+          '<input type="text" data-sf="unit" placeholder="\u4e2a / % / \u5143" /></label>' +
+          '</div>' +
+          '<label class="field"><span>\u4e0b\u65b9\u8bf4\u660e</span>' +
+          '<input type="text" data-sf="label" /></label>';
+        d.querySelector('[data-act="del"]').addEventListener('click', function () {
+          d.remove();
+          touch();
+        });
+        d.addEventListener('input', touch);
+        addTo('statList', d);
+      });
+      $('addNow').addEventListener('click', function () {
+        addTo('nowList', itemCard(['title', 'desc', 'tag']));
+      });
+      $('addPrin').addEventListener('click', function () {
+        addTo('prinList', itemCard(['title', 'desc']));
+      });
+      $('addTl').addEventListener('click', function () {
+        addTo('tlList', itemCard(['year', 'title', 'desc']));
+      });
+      $('addGroup').addEventListener('click', function () {
+        var d = document.createElement('div');
+        d.className = 'card';
+        d.style.marginBottom = '12px';
+        d.innerHTML =
+          '<div class="card-head"><span class="idx">\u00b7</span><h2>\u5206\u7ec4</h2>' +
+          '<span class="sp"></span>' +
+          '<button class="btn btn-danger" data-act="del">\u5220\u9664</button></div>' +
+          '<label class="field"><span>\u5206\u7ec4\u540d</span>' +
+          '<input type="text" data-gf="name" placeholder="\u5199\u4ee3\u7801 / \u505a\u89c6\u9891" /></label>' +
+          '<label class="field"><span>\u6280\u80fd\uff08\u9017\u53f7\u5206\u9694\uff09</span>' +
+          '<input type="text" data-gf="items" placeholder="Python, TypeScript" /></label>';
+        d.querySelector('[data-act="del"]').addEventListener('click', function () {
+          d.remove();
+          touch();
+        });
+        d.addEventListener('input', touch);
+        addTo('groupList', d);
       });
 
-      ['s-', 'c-'].forEach(function () {});
-      document.querySelector('[data-panel="site"]').addEventListener('input', touch);
-      document.querySelector('[data-panel="chat"]').addEventListener('input', touch);
-      document.querySelector('[data-panel="chat"]').addEventListener('change', touch);
+      /* ---------- 表单变动 → 提示未保存 ---------- */
+      ['site', 'chat', 'home'].forEach(function (name) {
+        var panel = document.querySelector('[data-panel="' + name + '"]');
+        if (!panel) return;
+        panel.addEventListener('input', touch);
+        panel.addEventListener('change', touch);
+      });
 
       window.addEventListener('beforeunload', function (e) {
         if (dirtyKeys().length) {

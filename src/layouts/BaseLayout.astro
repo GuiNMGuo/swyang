@@ -41,11 +41,18 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? SITE.url).href;
 
     <link rel="sitemap" href="/sitemap-index.xml" />
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!--
+      字体自托管：原先从 fonts.googleapis.com 加载，国内访问会被墙，
+      且 @font-face 会阻塞首屏渲染（实测字体挂 6 秒 → FCP 6232ms）。
+      现在改为本地 /fonts/ 提供。这是一个可变字体文件，一份就覆盖全部字重，
+      只保留 latin 子集（中文走系统字体）。
+    -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800;900&display=swap"
-      rel="stylesheet"
+      rel="preload"
+      href="/fonts/nunito-var.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
     />
   </head>
 

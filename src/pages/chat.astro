@@ -2,788 +2,1140 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { CHAT } from '../lib/site';
 
-const config = {
-  url: CHAT.url,
-  anonKey: CHAT.anonKey,
-  bucket: CHAT.bucket,
-  table: CHAT.table,
+const cfg = {
+  broker: CHAT.broker,
   maxFileMB: CHAT.maxFileMB,
-  maxMessages: CHAT.maxMessages,
+  keepMessages: CHAT.keepMessages,
+  rooms: CHAT.publicRooms,
 };
 ---
 
-<BaseLayout title={CHAT.title} description={CHAT.subtitle} wide>
-  <section class="pb-10 pt-28 sm:pt-36">
-    <div class="reveal mb-8">
-      <div class="mb-2 text-[12.5px] font-bold tracking-[0.14em]" style="color: var(--color-ink-400);">
-        MESSAGE WALL
+<BaseLayout title="聊天室" description="有密码的房间，消息只留在房间里。">
+  <section class="pb-14 pt-28 sm:pt-32">
+    <!-- ============================ 第一步：选房间 ============================ -->
+    <div id="stage-pick">
+      <div class="mb-8">
+        <div
+          class="mb-2 text-[12.5px] font-bold tracking-[0.14em]"
+          style="color: var(--color-ink-400);"
+        >
+          PRIVATE ROOMS
+        </div>
+        <h1 class="text-[1.8rem] font-extrabold tracking-tight sm:text-[2.1rem]">
+          {CHAT.title}
+        </h1>
+        <p class="mt-3 max-w-xl text-[14.5px] leading-relaxed muted">{CHAT.subtitle}</p>
       </div>
-      <h1 class="text-[1.9rem] font-extrabold tracking-tight sm:text-[2.3rem]">{CHAT.title}</h1>
-      <p class="mt-3 max-w-xl text-[14.5px] leading-relaxed muted">{CHAT.subtitle}</p>
+
+      {
+        CHAT.publicRooms.length === 0 ? (
+          <div class="soft-card p-8 text-center">
+            <div class="text-3xl">🔒</div>
+            <h2 class="mt-4 text-[16.5px] font-extrabold">还没有房间</h2>
+            <p class="mt-2 text-[13.5px] leading-relaxed muted">
+              去后台加一个房间，填上名字和密码，它就会出现在这里。
+            </p>
+            <a href="/admin" class="btn-primary mt-6">打开后台加房间</a>
+          </div>
+        ) : (
+          <div class="grid gap-5 sm:grid-cols-2">
+            {CHAT.publicRooms.map((room) => (
+              <button
+                type="button"
+                class="room-card soft-card tilt-card flex flex-col items-start p-6 text-left"
+                data-room={room.id}
+              >
+                <span class="room-lock" aria-hidden="true">
+                  <svg
+                    width="17"
+                    height="17"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect x="3.5" y="10.5" width="17" height="10.5" rx="2.5" />
+                    <path d="M7.5 10.5V7.5a4.5 4.5 0 0 1 9 0v3" />
+                  </svg>
+                </span>
+                <span class="mt-4 text-[16.5px] font-extrabold leading-snug">{room.name}</span>
+                {room.desc && (
+                  <span class="mt-2 text-[13px] leading-relaxed muted">{room.desc}</span>
+                )}
+                <span class="mt-5 inline-flex items-center gap-1.5 text-[13px] font-bold room-go">
+                  输入密码进入
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.6"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M5 12h13M13 6l6 6-6 6" />
+                  </svg>
+                </span>
+              </button>
+            ))}
+          </div>
+        )
+      }
+
+      <p class="mt-8 text-[12.5px] leading-relaxed faint">
+        房间和密码在 <a href="/admin" class="underline">后台</a> 里管理。密码只在这台设备上校验，
+        不会明文发到网上；不知道密码就进不了对应的房间。
+      </p>
     </div>
 
-    {
-      !CHAT.enabled && (
-        <div class="soft-card reveal p-7 sm:p-9">
-          <div class="mb-5 flex items-center gap-3">
-            <span
-              class="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-[17px]"
-              style="background-color: #FDF0D8; color: #A15C07;"
+    <!-- ============================ 第二步：输密码 ============================ -->
+    <div id="stage-gate" hidden>
+      <button type="button" id="gateBack" class="link-back">← 换个房间</button>
+
+      <div class="gate-card soft-card mt-5 p-7 sm:p-9">
+        <div class="flex items-center gap-3.5">
+          <span class="room-lock" aria-hidden="true">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
             >
-              ⚙
-            </span>
-            <div>
-              <h2 class="text-[16.5px] font-extrabold">留言墙还没开启</h2>
-              <p class="text-[13px] faint">按下面四步做完就可以用了，全程免费，大约 5 分钟。</p>
-            </div>
-          </div>
-
-          <ol class="ml-1 space-y-4 text-[14px] leading-relaxed" style="color: var(--text-mid);">
-            <li class="flex gap-3">
-              <span class="faint shrink-0 font-extrabold tabular-nums">01</span>
-              <span>
-                打开 <a
-                  class="font-bold underline decoration-dotted"
-                  href="https://supabase.com"
-                  target="_blank"
-                  rel="noopener">supabase.com</a
-                >，用 GitHub 账号登录，新建一个项目（New project）。<br />
-                <span class="faint text-[13px]">Region 选 Singapore，建得快也离你近。</span>
-              </span>
-            </li>
-            <li class="flex gap-3">
-              <span class="faint shrink-0 font-extrabold tabular-nums">02</span>
-              <span>
-                进去后点左侧 <b>SQL Editor</b> → New query，把后台里「留言墙」页面提供的那段建表
-                SQL 整段粘进去，点 <b>Run</b>。<br />
-                <span class="faint text-[13px]">这会建好数据表、存储桶和读写规则。</span>
-              </span>
-            </li>
-            <li class="flex gap-3">
-              <span class="faint shrink-0 font-extrabold tabular-nums">03</span>
-              <span>
-                左侧 <b>Project Settings → API</b>，复制 <b>Project URL</b> 和
-                <b>anon public</b> 两个值。
-              </span>
-            </li>
-            <li class="flex gap-3">
-              <span class="faint shrink-0 font-extrabold tabular-nums">04</span>
-              <span>
-                到 <a class="font-bold underline decoration-dotted" href="/admin">/admin</a> 后台 →
-                「留言墙」标签，把两个值填进去，「是否开启」选开启，点保存。1 分钟后这个页面就能用了。
-              </span>
-            </li>
-          </ol>
-
-          <div class="mt-7 flex flex-wrap gap-3">
-            <a href="/admin" class="btn-primary arrow-slide">
-              去后台配置
-              <svg
-                width="15"
-                height="15"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.6"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M5 12h13M13 6l6 6-6 6"></path>
-              </svg>
-            </a>
+              <rect x="3.5" y="10.5" width="17" height="10.5" rx="2.5" />
+              <path d="M7.5 10.5V7.5a4.5 4.5 0 0 1 9 0v3" />
+            </svg>
+          </span>
+          <div class="min-w-0">
+            <h1 id="gateName" class="truncate text-[1.25rem] font-extrabold tracking-tight"></h1>
+            <p id="gateDesc" class="mt-0.5 truncate text-[13px] faint"></p>
           </div>
         </div>
-      )
-    }
 
-    {
-      CHAT.enabled && (
-        <>
-          <div class="soft-card reveal mb-5 flex flex-wrap items-center gap-x-6 gap-y-2 px-6 py-4">
-            <div class="flex items-center gap-2 text-[13px] font-bold" style="color: var(--color-ink-600);">
-              <span class="relative flex h-2 w-2">
-                <span
-                  class="absolute inline-flex h-full w-full animate-ping rounded-full opacity-70"
-                  style="background-color: #2A7D62;"
-                />
-                <span class="relative inline-flex h-2 w-2 rounded-full" style="background-color: #2A7D62;" />
-              </span>
-              <span id="connState">正在连接…</span>
+        <form id="gateForm" class="mt-7" autocomplete="off">
+          <label class="field">
+            <span>房间密码</span>
+            <div class="pw-wrap">
+              <input id="pw" type="password" inputmode="text" autocomplete="off" placeholder="请输入密码" />
+              <button type="button" id="pwEye" class="pw-eye" aria-label="显示密码">显示</button>
             </div>
-            <div class="text-[13px] faint" id="countState"></div>
-            <div class="grow" />
-            <div class="text-[12.5px] faint">单个文件最大 {CHAT.maxFileMB}MB · 只保留最新 {CHAT.maxMessages} 条</div>
-          </div>
+          </label>
 
-          <div class="grid gap-5 lg:grid-cols-[1fr_320px]">
-            <!-- 消息列表 -->
-            <div class="soft-card flex min-h-[420px] flex-col overflow-hidden">
-              <div
-                id="msgList"
-                class="flex flex-1 flex-col gap-4 overflow-y-auto p-5 sm:p-6"
-                style="max-height: 62vh;"
-              >
-                <div class="py-16 text-center text-[14px] faint" id="emptyState">还没有人留言，说第一句吧。</div>
-              </div>
+          <label class="field">
+            <span>你的昵称（可选）</span>
+            <input id="nick" type="text" maxlength="16" autocomplete="off" placeholder="朋友看到的名字" />
+          </label>
 
-              <!-- 上传进度 -->
-              <div id="uploadBar" class="hidden border-t px-5 py-3 sm:px-6" style="border-color: var(--border);">
-                <div class="mb-2 flex items-center justify-between text-[12.5px] font-bold">
-                  <span id="uploadName" class="truncate" style="color: var(--text-mid);"></span>
-                  <span id="uploadPct" class="tabular-nums faint">0%</span>
-                </div>
-                <div class="h-1.5 w-full overflow-hidden rounded-full" style="background-color: #EDF1EE;">
-                  <div
-                    id="uploadFill"
-                    class="h-full rounded-full transition-[width] duration-200"
-                    style="width: 0%; background-color: #2A7D62;"
-                  >
-                  </div>
-                </div>
-              </div>
+          <p id="gateHint" class="mt-1 text-[12.5px]" style="color: var(--text-soft);"></p>
+          <p
+            id="gateErr"
+            class="mt-3 text-[13px] font-semibold"
+            style="color: #b3341f;"
+            hidden
+          >
+          </p>
 
-              <!-- 输入区 -->
-              <div class="border-t p-4 sm:p-5" style="border-color: var(--border);">
-                <div id="errBox" class="mb-3 hidden rounded-xl px-4 py-3 text-[13px]" style="background-color: #FDECEB; color: #9C2B21;">
-                </div>
+          <button type="submit" id="gateBtn" class="btn-primary mt-6 w-full justify-center">
+            进入房间
+          </button>
+          <p id="gateNote" class="mt-3 text-center text-[12.5px] faint">
+            点「进入房间」后密码会当场算一下，对得上才开门。
+          </p>
+        </form>
+      </div>
+    </div>
 
-                <div id="pendingPreview" class="mb-3 hidden flex-wrap gap-2"></div>
-
-                <div class="flex items-end gap-3">
-                  <input
-                    id="nick"
-                    type="text"
-                    maxlength="16"
-                    placeholder="昵称"
-                    class="w-[92px] shrink-0 rounded-xl px-3 py-2.5 text-[13.5px] font-semibold outline-none transition-colors sm:w-[110px]"
-                    style="background-color: #FBF9F4; border: 1px solid var(--border); color: var(--text);"
-                  />
-                  <textarea
-                    id="body"
-                    rows="1"
-                    placeholder="说点什么…（Enter 发送，Shift+Enter 换行）"
-                    class="flex-1 resize-none rounded-xl px-3.5 py-2.5 text-[14px] leading-relaxed outline-none transition-colors"
-                    style="background-color: #FBF9F4; border: 1px solid var(--border); color: var(--text); max-height: 132px;"
-                  ></textarea>
-                  <button
-                    id="attachBtn"
-                    type="button"
-                    aria-label="选择文件"
-                    title={`上传图片 / 视频 / 文件（≤ ${CHAT.maxFileMB}MB）`}
-                    class="grid h-10 w-10 shrink-0 place-items-center rounded-full transition-all hover:-translate-y-0.5"
-                    style="background-color: #EEF7F2; border: 1px solid #DCEEDE; color: var(--color-ink-600);"
-                  >
-                    <svg
-                      width="17"
-                      height="17"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2.2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <path d="M21.4 11.05 12.25 20.2a5.5 5.5 0 0 1-7.78-7.78l9.2-9.19a3.67 3.67 0 1 1 5.19 5.19l-9.2 9.19a1.83 1.83 0 0 1-2.59-2.59l8.5-8.49"></path>
-                    </svg>
-                  </button>
-                  <button id="sendBtn" type="button" class="btn-primary shrink-0 px-6 py-2.5 text-[14.5px]" style="border-radius: 12px;">
-                    发送
-                  </button>
-                </div>
-                <input id="fileInput" type="file" class="hidden" multiple />
-                <p class="mt-2.5 text-[12px] faint">
-                  留言是公开的，别发隐私内容。附件存在你自己的 Supabase 免费空间里。
-                </p>
-              </div>
+    <!-- ============================ 第三步：聊天室 ============================ -->
+    <div id="stage-room" hidden>
+      <div class="room-head">
+        <div class="flex min-w-0 items-center gap-3">
+          <span class="room-lock sm" aria-hidden="true">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.4"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="3.5" y="10.5" width="17" height="10.5" rx="2.5" />
+              <path d="M7.5 10.5V7.5a4.5 4.5 0 0 1 9 0v3" />
+            </svg>
+          </span>
+          <div class="min-w-0">
+            <h1 id="roomName" class="truncate text-[15.5px] font-extrabold leading-tight"></h1>
+            <div class="mt-0.5 flex items-center gap-1.5 text-[12px] faint">
+              <span id="dot" class="dot"></span>
+              <span id="conn">连接中…</span>
             </div>
-
-            <!-- 侧栏提示 -->
-            <aside class="reveal space-y-4">
-              <div class="soft-card p-5">
-                <h3 class="mb-3 text-[14px] font-extrabold">能传什么</h3>
-                <ul class="space-y-2.5 text-[13px] leading-relaxed" style="color: var(--text-mid);">
-                  <li>📝 纯文字留言</li>
-                  <li>🖼 图片，点开可放大看</li>
-                  <li>🎬 视频，直接在墙里播放</li>
-                  <li>📎 其他文件，点一下下载</li>
-                </ul>
-              </div>
-              <div class="soft-card p-5">
-                <h3 class="mb-3 text-[14px] font-extrabold">关于数量</h3>
-                <p class="text-[13px] leading-relaxed" style="color: var(--text-mid);">
-                  墙上永远只留最新 {CHAT.maxMessages} 条。发新的时，最早那条会连同它的附件一起自动清掉，不用手动管理。
-                </p>
-              </div>
-              <div class="soft-card p-5">
-                <h3 class="mb-3 text-[14px] font-extrabold">空间够用吗</h3>
-                <p class="text-[13px] leading-relaxed" style="color: var(--text-mid);">
-                  Supabase 免费版给 1GB 存储。放图片很宽裕；{CHAT.maxFileMB}MB
-                  的完整视频大概能放二三十个，超了在 Supabase 后台删几个就行。
-                </p>
-              </div>
-            </aside>
           </div>
+        </div>
 
-          <script type="application/json" id="chat-config" set:html={JSON.stringify(config)} />
-          <script is:inline>
-            (function () {
-              var cfg = JSON.parse(document.getElementById('chat-config').textContent);
-              var base = cfg.url;
-              var headers = { apikey: cfg.anonKey, Authorization: 'Bearer ' + cfg.anonKey };
-              var seen = {};
-              var pending = [];      // 待发送的附件
-              var sending = false;
-              var polling = null;
+        <div class="flex shrink-0 items-center gap-2">
+          <button type="button" id="btnNick" class="mini-btn">昵称</button>
+          <button type="button" id="btnClear" class="mini-btn">清空</button>
+          <button type="button" id="btnLeave" class="mini-btn danger">离开</button>
+        </div>
+      </div>
 
-              var $ = function (id) {
-                return document.getElementById(id);
-              };
-              var list = $('msgList');
-              var empty = $('emptyState');
+      <div id="list" class="msg-list">
+        <div id="empty" class="msg-empty">
+          <div class="text-2xl">💬</div>
+          <p class="mt-3 text-[13.5px] font-bold">房间里还很安静</p>
+          <p class="mt-1.5 text-[12.5px] faint">说点什么吧，消息会留在房间里。</p>
+        </div>
+      </div>
 
-              function esc(s) {
-                return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-                  return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-                });
-              }
+      <form id="composer" class="composer" autocomplete="off">
+        <label class="attach" title="发一张图片">
+          <input id="file" type="file" accept="image/*" hidden />
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="3" y="4.5" width="18" height="15" rx="3" />
+            <circle cx="8.5" cy="10" r="1.6" />
+            <path d="M4 17l5-4.5 4 3.5 3-2.5 4 3.5" />
+          </svg>
+        </label>
+        <input id="text" type="text" maxlength="2000" placeholder="输入消息，回车发送" />
+        <button type="submit" id="btnSend" class="send-btn">发送</button>
+      </form>
 
-              function fmtSize(b) {
-                if (!b) return '';
-                if (b < 1024) return b + ' B';
-                if (b < 1048576) return (b / 1024).toFixed(0) + ' KB';
-                return (b / 1048576).toFixed(1) + ' MB';
-              }
+      <p class="mt-3 text-[12px] leading-relaxed faint">
+        消息存在你本机浏览器里，同时通过公共通道实时同步给房间里的人。点自己消息右边的「×」可以删掉。
+      </p>
+    </div>
 
-              function fmtTime(t) {
-                var d = new Date(t);
-                var diff = (Date.now() - d.getTime()) / 1000;
-                if (diff < 60) return '刚刚';
-                if (diff < 3600) return Math.floor(diff / 60) + ' 分钟前';
-                if (diff < 86400) return Math.floor(diff / 3600) + ' 小时前';
-                if (diff < 604800) return Math.floor(diff / 86400) + ' 天前';
-                return (
-                  d.getFullYear() +
-                  '/' +
-                  String(d.getMonth() + 1).padStart(2, '0') +
-                  '/' +
-                  String(d.getDate()).padStart(2, '0') +
-                  ' ' +
-                  String(d.getHours()).padStart(2, '0') +
-                  ':' +
-                  String(d.getMinutes()).padStart(2, '0')
-                );
-              }
-
-              function showErr(t) {
-                var b = $('errBox');
-                if (!t) {
-                  b.classList.add('hidden');
-                  return;
-                }
-                b.textContent = t;
-                b.classList.remove('hidden');
-              }
-
-              function setConn(text, color) {
-                $('connState').textContent = text;
-                var dot = $('connState').parentNode.querySelectorAll('span')[1];
-                if (dot) dot.style.backgroundColor = color;
-              }
-
-              /* ---------- 渲染一条消息 ---------- */
-              function render(m) {
-                var mine = m.nickname && m.nickname === ($('nick').value.trim() || '');
-                var wrap = document.createElement('div');
-                wrap.className = 'flex gap-3';
-                wrap.style.flexDirection = mine ? 'row-reverse' : 'row';
-                wrap.dataset.id = m.id;
-
-                var initial = (m.nickname || '访').trim().charAt(0) || '访';
-                var avatar =
-                  '<div class="grid h-9 w-9 shrink-0 place-items-center rounded-full text-[13px] font-extrabold text-white" style="background-color: ' +
-                  (mine ? '#2A7D62' : '#479B7D') +
-                  ';">' +
-                  esc(initial) +
-                  '</div>';
-
-                var attach = '';
-                if (m.kind === 'image' && m.file_url) {
-                  attach =
-                    '<img src="' +
-                    esc(m.file_url) +
-                    '" alt="' +
-                    esc(m.file_name || '图片') +
-                    '" loading="lazy" class="mt-2 max-h-[320px] w-full cursor-zoom-in rounded-xl object-cover" data-zoom="' +
-                    esc(m.file_url) +
-                    '" style="border: 1px solid var(--border);" />';
-                } else if (m.kind === 'video' && m.file_url) {
-                  attach =
-                    '<video src="' +
-                    esc(m.file_url) +
-                    '" controls preload="metadata" class="mt-2 w-full rounded-xl" style="max-height: 340px; background:#0D3D30;"></video>';
-                } else if (m.file_url) {
-                  attach =
-                    '<a href="' +
-                    esc(m.file_url) +
-                    '" target="_blank" rel="noopener" download class="mt-2 flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-[13px] font-bold transition-colors" style="background-color: rgba(255,255,255,.7); border: 1px solid var(--border); color: var(--color-ink-600);">' +
-                    '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>' +
-                    '<span class="truncate">' +
-                    esc(m.file_name || '下载文件') +
-                    '</span>' +
-                    '<span class="faint shrink-0 font-semibold">' +
-                    fmtSize(m.file_size) +
-                    '</span></a>';
-                }
-
-                var bubbleBg = mine ? '#134E3D' : '#FFFFFF';
-                var bubbleColor = mine ? '#FFFFFF' : 'var(--text)';
-                var bubbleBorder = mine ? 'transparent' : 'var(--border)';
-
-                wrap.innerHTML =
-                  avatar +
-                  '<div style="max-width: min(78%, 460px); text-align: ' +
-                  (mine ? 'right' : 'left') +
-                  ';">' +
-                  '<div class="flex items-center gap-2 text-[12px] font-bold" style="' +
-                  (mine ? 'justify-content: flex-end;' : '') +
-                  'color: var(--text-soft);">' +
-                  '<span>' +
-                  esc(m.nickname || '访客') +
-                  '</span><span class="faint font-semibold">' +
-                  fmtTime(m.created_at) +
-                  '</span>' +
-                  '</div>' +
-                  '<div class="mt-1.5 inline-block px-4 py-2.5 text-[14px] leading-relaxed" style="background-color: ' +
-                  bubbleBg +
-                  '; color: ' +
-                  bubbleColor +
-                  '; border: 1px solid ' +
-                  bubbleBorder +
-                  '; border-radius: 16px; text-align: left; word-break: break-word; box-shadow: var(--shadow-sm);">' +
-                  (m.body ? esc(m.body).replace(/\n/g, '<br />') : '') +
-                  attach +
-                  '</div>' +
-                  '</div>';
-
-                return wrap;
-              }
-
-              function addMsg(m, prepend) {
-                if (seen[m.id]) return;
-                seen[m.id] = true;
-                if (empty) empty.style.display = 'none';
-                var el = render(m);
-                if (prepend) list.insertBefore(el, list.firstChild);
-                else list.appendChild(el);
-              }
-
-              /* ---------- 拉取 ---------- */
-              async function fetchAll(silent) {
-                var q =
-                  base +
-                  '/rest/v1/' +
-                  cfg.table +
-                  '?select=*&order=created_at.desc&limit=' +
-                  cfg.maxMessages;
-                var r = await fetch(q, { headers: headers });
-                if (!r.ok) throw new Error('读取留言失败（HTTP ' + r.status + '）');
-                var rows = await r.json();
-                if (!silent) {
-                  Array.prototype.forEach.call(list.querySelectorAll('[data-id]'), function (n) {
-                    n.remove();
-                  });
-                  seen = {};
-                  if (empty) empty.style.display = rows.length ? 'none' : 'block';
-                }
-                // 从旧到新插入，保证阅读顺序自然
-                for (var i = rows.length - 1; i >= 0; i--) addMsg(rows[i], false);
-                $('countState').textContent = '现有 ' + rows.length + ' / ' + cfg.maxMessages + ' 条';
-                setConn('已连接', '#2A7D62');
-                return rows;
-              }
-
-              /* ---------- 上传附件 ---------- */
-              function extOf(name) {
-                var m = /\.([a-z0-9]+)$/i.exec(name || '');
-                return m ? m[1].toLowerCase() : 'bin';
-              }
-
-              function kindOf(type, name) {
-                if (/^image\//.test(type)) return 'image';
-                if (/^video\//.test(type)) return 'video';
-                return 'file';
-              }
-
-              async function upload(file) {
-                var safe = (file.name || 'file')
-                  .replace(/\.[^.]+$/, '')
-                  .replace(/[^a-zA-Z0-9\u4e00-\u9fa5-]/g, '-')
-                  .slice(0, 40);
-                var path =
-                  new Date().toISOString().slice(0, 7) +
-                  '/' +
-                  Date.now() +
-                  '-' +
-                  Math.random().toString(36).slice(2, 7) +
-                  '-' +
-                  safe +
-                  '.' +
-                  extOf(file.name);
-
-                $('uploadBar').classList.remove('hidden');
-                $('uploadName').textContent = file.name;
-                $('uploadFill').style.width = '0%';
-                $('uploadPct').textContent = '0%';
-
-                await new Promise(function (resolve, reject) {
-                  var xhr = new XMLHttpRequest();
-                  xhr.open('POST', base + '/storage/v1/object/' + cfg.bucket + '/' + path);
-                  xhr.setRequestHeader('apikey', cfg.anonKey);
-                  xhr.setRequestHeader('Authorization', 'Bearer ' + cfg.anonKey);
-                  xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
-                  xhr.upload.onprogress = function (e) {
-                    if (!e.lengthComputable) return;
-                    var p = Math.round((e.loaded / e.total) * 100);
-                    $('uploadFill').style.width = p + '%';
-                    $('uploadPct').textContent = p + '%';
-                  };
-                  xhr.onload = function () {
-                    if (xhr.status >= 200 && xhr.status < 300) resolve();
-                    else
-                      reject(
-                        new Error(
-                          xhr.status === 413
-                            ? '文件超过 Supabase 限制，被拒绝了。'
-                            : '上传失败（HTTP ' + xhr.status + '）：' + xhr.responseText.slice(0, 160),
-                        ),
-                      );
-                  };
-                  xhr.onerror = function () {
-                    reject(new Error('网络中断，上传失败。'));
-                  };
-                  xhr.send(file);
-                });
-
-                $('uploadFill').style.width = '100%';
-                $('uploadPct').textContent = '100%';
-                setTimeout(function () {
-                  $('uploadBar').classList.add('hidden');
-                }, 500);
-
-                return {
-                  file_url: base + '/storage/v1/object/public/' + cfg.bucket + '/' + path,
-                  file_name: file.name,
-                  file_size: file.size,
-                  file_type: file.type || '',
-                  _path: path,
-                };
-              }
-
-              /* ---------- 超量清理 ---------- */
-              async function trim() {
-                var r = await fetch(
-                  base +
-                    '/rest/v1/' +
-                    cfg.table +
-                    '?select=id,file_url,kind&order=created_at.desc&offset=' +
-                    cfg.maxMessages,
-                  { headers: headers },
-                );
-                if (!r.ok) return 0;
-                var old = await r.json();
-                if (!old.length) return 0;
-
-                var ids = old.map(function (o) {
-                  return o.id;
-                });
-                await fetch(base + '/rest/v1/' + cfg.table + '?id=in.(' + ids.join(',') + ')', {
-                  method: 'DELETE',
-                  headers: headers,
-                });
-
-                // 顺手把附件从存储里删掉，避免空间白占
-                var paths = old
-                  .filter(function (o) {
-                    return o.file_url;
-                  })
-                  .map(function (o) {
-                    var i = o.file_url.indexOf('/' + cfg.bucket + '/');
-                    return i < 0 ? '' : o.file_url.slice(i + cfg.bucket.length + 2);
-                  })
-                  .filter(Boolean);
-                if (paths.length) {
-                  await fetch(base + '/storage/v1/object/' + cfg.bucket, {
-                    method: 'DELETE',
-                    headers: Object.assign({ 'Content-Type': 'application/json' }, headers),
-                    body: JSON.stringify({ prefixes: paths }),
-                  });
-                }
-                return old.length;
-              }
-
-              /* ---------- 发送 ---------- */
-              async function send() {
-                if (sending) return;
-                var text = $('body').value.trim();
-                if (!text && !pending.length) return;
-
-                sending = true;
-                $('sendBtn').disabled = true;
-                $('sendBtn').textContent = '发送中';
-                showErr('');
-
-                var nick = $('nick').value.trim() || '访客';
-                localStorage.setItem('ysw_chat_nick', nick);
-
-                try {
-                  var payloads = [];
-                  if (pending.length) {
-                    for (var i = 0; i < pending.length; i++) {
-                      var up = await upload(pending[i]);
-                      payloads.push({
-                        nickname: nick,
-                        body: i === 0 ? text : '',
-                        kind: kindOf(up.file_type, up.file_name),
-                        file_url: up.file_url,
-                        file_name: up.file_name,
-                        file_size: up.file_size,
-                        file_type: up.file_type,
-                      });
-                    }
-                  } else {
-                    payloads.push({ nickname: nick, body: text, kind: 'text' });
-                  }
-
-                  var r = await fetch(base + '/rest/v1/' + cfg.table, {
-                    method: 'POST',
-                    headers: Object.assign({ 'Content-Type': 'application/json', Prefer: 'return=representation' }, headers),
-                    body: JSON.stringify(payloads),
-                  });
-                  if (!r.ok) {
-                    var t = await r.text();
-                    throw new Error('发送失败（HTTP ' + r.status + '）：' + t.slice(0, 180));
-                  }
-                  var rows = await r.json();
-                  rows.forEach(function (m) {
-                    addMsg(m, false);
-                  });
-
-                  $('body').value = '';
-                  $('body').style.height = 'auto';
-                  pending = [];
-                  drawPending();
-
-                  var removed = await trim();
-                  if (removed) await fetchAll(true);
-                  await fetchAll(true);
-                  list.scrollTop = list.scrollHeight;
-                } catch (e) {
-                  showErr(e.message);
-                } finally {
-                  sending = false;
-                  $('sendBtn').disabled = false;
-                  $('sendBtn').textContent = '发送';
-                }
-              }
-
-              /* ---------- 待发送附件预览 ---------- */
-              function drawPending() {
-                var box = $('pendingPreview');
-                box.innerHTML = '';
-                if (!pending.length) {
-                  box.classList.add('hidden');
-                  return;
-                }
-                box.classList.remove('hidden');
-                box.className = 'mb-3 flex flex-wrap gap-2';
-                pending.forEach(function (f, i) {
-                  var chip = document.createElement('div');
-                  chip.className =
-                    'flex items-center gap-2 rounded-xl px-3 py-2 text-[12.5px] font-bold';
-                  chip.style.cssText =
-                    'background-color: #EEF7F2; border: 1px solid #DCEEDE; color: var(--color-ink-600);';
-                  chip.innerHTML =
-                    '<span class="max-w-[180px] truncate">' +
-                    esc(f.name) +
-                    '</span><span class="faint font-semibold">' +
-                    fmtSize(f.size) +
-                    '</span>';
-                  var x = document.createElement('button');
-                  x.type = 'button';
-                  x.textContent = '✕';
-                  x.style.cssText = 'color: var(--text-soft); font-weight: 800; cursor: pointer;';
-                  x.onclick = function () {
-                    pending.splice(i, 1);
-                    drawPending();
-                  };
-                  chip.appendChild(x);
-                  box.appendChild(chip);
-                });
-              }
-
-              /* ---------- 事件绑定 ---------- */
-              var nickSaved = localStorage.getItem('ysw_chat_nick');
-              if (nickSaved) $('nick').value = nickSaved;
-
-              $('sendBtn').addEventListener('click', send);
-              $('body').addEventListener('keydown', function (e) {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  send();
-                }
-              });
-              $('body').addEventListener('input', function () {
-                this.style.height = 'auto';
-                this.style.height = Math.min(this.scrollHeight, 132) + 'px';
-              });
-
-              $('attachBtn').addEventListener('click', function () {
-                $('fileInput').click();
-              });
-
-              $('fileInput').addEventListener('change', function () {
-                var fs = Array.prototype.slice.call(this.files || []);
-                var over = fs.filter(function (f) {
-                  return f.size > cfg.maxFileMB * 1048576;
-                });
-                if (over.length) {
-                  showErr(
-                    over
-                      .map(function (f) {
-                        return f.name + '（' + fmtSize(f.size) + '）';
-                      })
-                      .join('、') +
-                      ' 超过了 ' +
-                      cfg.maxFileMB +
-                      'MB 上限，请换小一点的。',
-                  );
-                  fs = fs.filter(function (f) {
-                    return f.size <= cfg.maxFileMB * 1048576;
-                  });
-                }
-                pending = pending.concat(fs).slice(0, 5);
-                drawPending();
-                this.value = '';
-              });
-
-              // 图片点击放大
-              list.addEventListener('click', function (e) {
-                var z = e.target.closest('[data-zoom]');
-                if (!z) return;
-                var mask = document.createElement('div');
-                mask.style.cssText =
-                  'position:fixed;inset:0;z-index:99;background:rgba(8,42,33,.9);display:grid;place-items:center;padding:24px;cursor:zoom-out;';
-                var img = document.createElement('img');
-                img.src = z.getAttribute('data-zoom');
-                img.style.cssText = 'max-width:100%;max-height:100%;border-radius:14px;';
-                mask.appendChild(img);
-                mask.onclick = function () {
-                  mask.remove();
-                };
-                document.body.appendChild(mask);
-              });
-
-              /* ---------- 实时订阅（带轮询兜底） ---------- */
-              function startPolling() {
-                if (polling) return;
-                polling = setInterval(function () {
-                  fetchAll(true).catch(function () {});
-                }, 5000);
-              }
-
-              function startRealtime() {
-                try {
-                  var wsUrl =
-                    base.replace('https://', 'wss://') +
-                    '/realtime/v1/websocket?apikey=' +
-                    encodeURIComponent(cfg.anonKey) +
-                    '&vsn=1.0.0';
-                  var ws = new WebSocket(wsUrl);
-                  var hb = null;
-                  var ref = 1;
-                  var topic = 'realtime:public:' + cfg.table;
-
-                  ws.onopen = function () {
-                    ws.send(
-                      JSON.stringify({
-                        topic: topic,
-                        event: 'phx_join',
-                        payload: {
-                          config: {
-                            broadcast: { self: false },
-                            presence: { key: '' },
-                            postgres_changes: [
-                              { event: 'INSERT', schema: 'public', table: cfg.table },
-                              { event: 'DELETE', schema: 'public', table: cfg.table },
-                            ],
-                          },
-                        },
-                        ref: String(ref++),
-                      }),
-                    );
-                    hb = setInterval(function () {
-                      if (ws.readyState === 1)
-                        ws.send(
-                          JSON.stringify({ topic: 'phoenix', event: 'heartbeat', payload: {}, ref: 'hb' }),
-                        );
-                    }, 25000);
-                  };
-
-                  ws.onmessage = function (ev) {
-                    var m;
-                    try {
-                      m = JSON.parse(ev.data);
-                    } catch (e) {
-                      return;
-                    }
-                    if (m.event === 'phx_reply' && m.payload && m.payload.status === 'ok') {
-                      setConn('实时连接中', '#2A7D62');
-                    }
-                    if (m.event === 'postgres_changes') {
-                      var rec = m.payload && m.payload.data && m.payload.data.record;
-                      if (rec && rec.id != null) addMsg(rec, false);
-                      if (m.payload.data.type === 'DELETE') {
-                        var old = m.payload.data.old;
-                        if (old && old.id != null && seen[old.id]) {
-                          var n = list.querySelector('[data-id="' + old.id + '"]');
-                          if (n) n.remove();
-                          delete seen[old.id];
-                        }
-                      }
-                    }
-                  };
-
-                  ws.onerror = function () {
-                    setConn('已连接（5 秒自动刷新）', '#479B7D');
-                  };
-                  ws.onclose = function () {
-                    if (hb) clearInterval(hb);
-                    setConn('已连接（5 秒自动刷新）', '#479B7D');
-                    startPolling();
-                  };
-                } catch (e) {
-                  setConn('已连接（5 秒自动刷新）', '#479B7D');
-                  startPolling();
-                }
-              }
-
-              fetchAll(false)
-                .then(function () {
-                  startRealtime();
-                  startPolling();
-                  list.scrollTop = list.scrollHeight;
-                })
-                .catch(function (e) {
-                  setConn('连接失败', '#D0453A');
-                  showErr(
-                    e.message +
-                      '　请检查 Supabase 的 URL / key 是否填对，以及建表 SQL 是否跑过。',
-                  );
-                });
-            })();
-          </script>
-        </>
-      )
-    }
+    <div id="toast" class="toast" hidden></div>
   </section>
+
+  <script type="application/json" id="chat-cfg" set:html={JSON.stringify(cfg)}></script>
 </BaseLayout>
+
+<style>
+  /* ---------- 公共小件 ---------- */
+  .room-lock {
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+    border-radius: 12px;
+    background-color: var(--color-ink-700);
+    color: #fff;
+  }
+  .room-lock.sm {
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+  }
+
+  .room-card {
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+  }
+  .room-go {
+    color: var(--color-ink-600);
+  }
+
+  .link-back {
+    font: inherit;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--text-soft);
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+  }
+  .link-back:hover {
+    color: var(--text);
+  }
+
+  .gate-card {
+    max-width: 460px;
+  }
+
+  .field {
+    display: block;
+    margin-bottom: 16px;
+  }
+  .field > span {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text-soft);
+    letter-spacing: 0.03em;
+  }
+  .field input {
+    width: 100%;
+    padding: 12px 14px;
+    font: inherit;
+    font-size: 15px;
+    color: var(--text);
+    background: #fff;
+    border: 1px solid var(--border-strong);
+    border-radius: 12px;
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s;
+  }
+  .field input:focus {
+    outline: none;
+    border-color: var(--color-ink-400);
+    box-shadow: 0 0 0 3.5px rgba(71, 155, 125, 0.16);
+  }
+
+  .pw-wrap {
+    position: relative;
+  }
+  .pw-eye {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
+    padding: 5px 10px;
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text-soft);
+    background: none;
+    border: 0;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .pw-eye:hover {
+    background: var(--accent-soft);
+    color: var(--color-ink-600);
+  }
+
+  /* ---------- 聊天室 ---------- */
+  .room-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .mini-btn {
+    padding: 7px 13px;
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text-mid);
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.18s;
+    white-space: nowrap;
+  }
+  .mini-btn:hover {
+    background: #fff;
+    border-color: var(--color-ink-300);
+    color: var(--text);
+  }
+  .mini-btn.danger:hover {
+    border-color: #e0b3ab;
+    color: #a83a26;
+  }
+
+  .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background-color: #c6c2b6;
+    flex-shrink: 0;
+    transition: background-color 0.25s;
+  }
+  .dot.on {
+    background-color: #2a9d6b;
+    box-shadow: 0 0 0 3px rgba(42, 157, 107, 0.16);
+  }
+  .dot.off {
+    background-color: #d08a2a;
+  }
+
+  .msg-list {
+    height: min(56vh, 520px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 18px 2px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .msg-list::-webkit-scrollbar {
+    width: 8px;
+  }
+  .msg-list::-webkit-scrollbar-thumb {
+    background: #dcd8ca;
+    border-radius: 99px;
+  }
+
+  .msg-empty {
+    margin: auto;
+    text-align: center;
+    color: var(--text-soft);
+  }
+
+  .msg {
+    display: flex;
+    flex-direction: column;
+    max-width: 78%;
+    animation: msgIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .msg.me {
+    align-self: flex-end;
+    align-items: flex-end;
+  }
+  @keyframes msgIn {
+    from {
+      opacity: 0;
+      transform: translateY(9px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .msg-top {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 5px;
+    padding: 0 4px;
+    font-size: 11.5px;
+    color: var(--text-soft);
+  }
+  .msg-top b {
+    font-weight: 800;
+    color: var(--text-mid);
+  }
+
+  .bubble {
+    position: relative;
+    padding: 10px 14px;
+    border-radius: 16px;
+    font-size: 14.5px;
+    line-height: 1.62;
+    word-break: break-word;
+    white-space: pre-wrap;
+    background: #fff;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+  .msg.me .bubble {
+    background: var(--color-ink-700);
+    border-color: var(--color-ink-700);
+    color: #fff;
+  }
+  .bubble img {
+    display: block;
+    max-width: 260px;
+    max-height: 260px;
+    width: auto;
+    height: auto;
+    border-radius: 10px;
+    margin: -2px 0;
+    cursor: zoom-in;
+  }
+    .msg.me .bubble:has(img) {
+      padding: 5px;
+      background: #fff;
+      border-color: var(--border);
+    }
+
+    .msg-del {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      width: 21px;
+      height: 21px;
+      display: grid;
+      place-items: center;
+      font-size: 14px;
+      line-height: 1;
+      color: #fff;
+      background: #b34a35;
+      border: 2px solid var(--bg);
+      border-radius: 50%;
+      cursor: pointer;
+      opacity: 0;
+      transform: scale(0.8);
+      transition: all 0.18s;
+    }
+    .msg.me .bubble:hover .msg-del {
+      opacity: 1;
+      transform: scale(1);
+    }
+    @media (hover: none) {
+      .msg.me .msg-del {
+        opacity: 0.92;
+        transform: scale(1);
+      }
+    }
+    .bubble:has(img) .msg-del {
+      border-color: #fff;
+    }
+
+  .composer {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-top: 6px;
+    padding: 8px 8px 8px 10px;
+    background: #fff;
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    box-shadow: var(--shadow-sm);
+  }
+  .composer input[type='text'] {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 4px;
+    font: inherit;
+    font-size: 14.5px;
+    color: var(--text);
+    background: none;
+    border: 0;
+    outline: none;
+  }
+  .attach {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    color: var(--text-soft);
+    cursor: pointer;
+    transition: all 0.18s;
+  }
+  .attach:hover {
+    background: var(--accent-soft);
+    color: var(--color-ink-600);
+  }
+  .attach.busy {
+    opacity: 0.45;
+    pointer-events: none;
+  }
+
+  .send-btn {
+    flex-shrink: 0;
+    padding: 9px 20px;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    background: var(--color-ink-700);
+    border: 0;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background-color 0.18s;
+  }
+  .send-btn:hover:not(:disabled) {
+    background: var(--color-ink-800);
+  }
+  .send-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 32px;
+    transform: translateX(-50%);
+    z-index: 60;
+    padding: 10px 20px;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #fff;
+    background: var(--color-ink-800);
+    border-radius: 999px;
+    box-shadow: var(--shadow-lg);
+    animation: toastIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  @keyframes toastIn {
+    from {
+      opacity: 0;
+      transform: translate(-50%, 14px);
+    }
+    to {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+  }
+
+  .lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: rgba(8, 42, 33, 0.78);
+    backdrop-filter: blur(4px);
+    cursor: zoom-out;
+  }
+  .lightbox img {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 14px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+  }
+</style>
+
+<script>
+  type PublicRoom = { id: string; name: string; desc: string; salt: string; check: string };
+  type Config = {
+    broker: string;
+    maxFileMB: number;
+    keepMessages: number;
+    rooms: PublicRoom[];
+  };
+  type Msg = {
+    id: string;
+    nick: string;
+    type: 'text' | 'img';
+    body: string;
+    t: number;
+    pub: boolean;
+  };
+
+  // ------------------------------------------------------------------ 工具
+  const $ = <T extends HTMLElement = HTMLElement>(sel: string) =>
+    document.querySelector(sel) as T;
+
+  const enc = new TextEncoder();
+
+  const toHex = (buf: ArrayBuffer) =>
+    Array.from(new Uint8Array(buf))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+
+  const ITER = 100000;
+
+  /**
+   * 从密码派生出一段哈希。
+   * salt 来自房间配置，info 区分用途：
+   *   'check' —— 用来校验密码对不对（房间里公开存着，没法反推）
+   *   'chan'  —— 用来算收发消息的频道名（不落盘，不知道密码推不出来）
+   */
+  async function deriveKey(salt: string, password: string, info: string): Promise<string> {
+    const key = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, [
+      'deriveBits',
+    ]);
+    const bits = await crypto.subtle.deriveBits(
+      { name: 'PBKDF2', salt: enc.encode(`${salt}|${info}`), iterations: ITER, hash: 'SHA-256' },
+      key,
+      128,
+    );
+    return toHex(bits);
+  }
+
+  /** 先把文字密码换成一段固定的哈希再当频道用，避免明文密码出现在任何地方 */
+  const channelOf = (roomId: string, chanKey: string) =>
+    `yswqjymdx/rooms/${roomId}/${chanKey}`;
+
+  function uid() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+
+  function fmtTime(t: number) {
+    const d = new Date(t);
+    const now = new Date();
+    const sameDay = d.toDateString() === now.toDateString();
+    const hm = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    return sameDay ? hm : `${d.getMonth() + 1}/${d.getDate()} ${hm}`;
+  }
+
+  let toastTimer = 0;
+  function toast(text: string) {
+    const el = $<HTMLDivElement>('#toast');
+    el.textContent = text;
+    el.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = window.setTimeout(() => (el.hidden = true), 2600);
+  }
+
+  // ------------------------------------------------------------------ 配置
+  const cfg: Config = JSON.parse($('#chat-cfg').textContent || '{}');
+  const SESSION_KEY = 'yswq_session';
+  const NICK_KEY = 'yswq_nick';
+
+  let current: PublicRoom | null = null;
+  let channel = '';
+  let nick = localStorage.getItem(NICK_KEY) || '';
+
+  // ------------------------------------------------------------------ 视图切换
+  const stages = {
+    pick: $<HTMLDivElement>('#stage-pick'),
+    gate: $<HTMLDivElement>('#stage-gate'),
+    room: $<HTMLDivElement>('#stage-room'),
+  };
+
+  function show(which: 'pick' | 'gate' | 'room') {
+    (Object.keys(stages) as Array<keyof typeof stages>).forEach((k) => {
+      stages[k].hidden = k !== which;
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ------------------------------------------------------------------ 第一步：选房间
+  function openGate(roomId: string) {
+    const room = cfg.rooms.find((r) => r.id === roomId);
+    if (!room) return;
+    current = room;
+
+    $<HTMLHeadingElement>('#gateName').textContent = room.name;
+    const descEl = $<HTMLParagraphElement>('#gateDesc');
+    descEl.textContent = room.desc || '';
+    descEl.hidden = !room.desc;
+    $<HTMLParagraphElement>('#gateHint').textContent = '';
+    $<HTMLParagraphElement>('#gateErr').hidden = true;
+
+    const pw = $<HTMLInputElement>('#pw');
+    pw.value = '';
+    const nickEl = $<HTMLInputElement>('#nick');
+    nickEl.value = nick;
+
+    show('gate');
+    window.setTimeout(() => pw.focus(), 120);
+  }
+
+  stages.pick.addEventListener('click', (e) => {
+    const card = (e.target as HTMLElement).closest('[data-room]') as HTMLElement | null;
+    if (card) openGate(card.dataset.room!);
+  });
+
+  $<HTMLButtonElement>('#gateBack').addEventListener('click', () => {
+    current = null;
+    show('pick');
+  });
+
+  $<HTMLButtonElement>('#pwEye').addEventListener('click', () => {
+    const pw = $<HTMLInputElement>('#pw');
+    const on = pw.type === 'password';
+    pw.type = on ? 'text' : 'password';
+    $<HTMLButtonElement>('#pwEye').textContent = on ? '隐藏' : '显示';
+    pw.focus();
+  });
+
+  // ------------------------------------------------------------------ 第二步：校验密码
+  $<HTMLFormElement>('#gateForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!current) return;
+
+    const password = $<HTMLInputElement>('#pw').value;
+    const errEl = $<HTMLParagraphElement>('#gateErr');
+    const btn = $<HTMLButtonElement>('#gateBtn');
+
+    if (!password) {
+      errEl.textContent = '还没输密码。';
+      errEl.hidden = false;
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = '正在校验…';
+    errEl.hidden = true;
+
+    let ok = false;
+    try {
+      // 先算校验值，跟自己房间存的哈希比对
+      const check = await deriveKey(current.salt, password, 'check');
+
+      if (check !== current.check) {
+        errEl.textContent = '密码不对，再想想。';
+        errEl.hidden = false;
+        return;
+      }
+
+      // 密码对了，再用另一路派生算出频道名（这个不落盘）
+      const chanKey = await deriveKey(current.salt, password, 'chan');
+
+      ok = true;
+      nick = $<HTMLInputElement>('#nick').value.trim() || nick || '访客';
+      localStorage.setItem(NICK_KEY, nick);
+
+      channel = channelOf(current.id, chanKey);
+      sessionStorage.setItem(
+        SESSION_KEY,
+        JSON.stringify({ roomId: current.id, channel, nick }),
+      );
+
+      enterRoom(current);
+    } finally {
+      if (!ok) {
+        btn.disabled = false;
+        btn.textContent = '进入房间';
+      }
+    }
+  });
+
+  // ------------------------------------------------------------------ 第三步：聊天室
+  let msgs: Msg[] = [];
+  let client: any = null;
+  let mqttLoading: Promise<void> | null = null;
+
+  const storeKey = (roomId: string) => `yswq_room_${roomId}`;
+
+  function load() {
+    if (!current) return;
+    try {
+      const raw = JSON.parse(localStorage.getItem(storeKey(current.id)) || '[]');
+      msgs = Array.isArray(raw) ? raw : [];
+    } catch {
+      msgs = [];
+    }
+  }
+
+  function save() {
+    if (!current) return;
+    try {
+      localStorage.setItem(storeKey(current.id), JSON.stringify(msgs.slice(-cfg.keepMessages)));
+    } catch {
+      /* 存不下就算了，不影响当下使用 */
+    }
+  }
+
+  const listEl = $<HTMLDivElement>('#list');
+  const emptyEl = $<HTMLDivElement>('#empty');
+
+  function draw() {
+    listEl.querySelectorAll('.msg').forEach((n) => n.remove());
+    emptyEl.hidden = msgs.length > 0;
+
+    msgs.forEach((m) => listEl.appendChild(bubble(m)));
+    listEl.scrollTop = listEl.scrollHeight;
+  }
+
+  function bubble(m: Msg): HTMLElement {
+    const mine = m.nick === nick;
+    const wrap = document.createElement('div');
+    wrap.className = 'msg' + (mine ? ' me' : '');
+    wrap.dataset.id = m.id;
+
+    const top = document.createElement('div');
+    top.className = 'msg-top';
+    top.innerHTML = `<b></b><span></span>`;
+    (top.querySelector('b') as HTMLElement).textContent = mine ? '我' : m.nick;
+    (top.querySelector('span') as HTMLElement).textContent = fmtTime(m.t);
+    wrap.appendChild(top);
+
+    const body = document.createElement('div');
+    body.className = 'bubble';
+
+    if (m.type === 'img') {
+      const img = document.createElement('img');
+      img.src = m.body;
+      img.alt = '图片';
+      img.loading = 'lazy';
+      img.addEventListener('click', () => lightbox(m.body));
+      body.appendChild(img);
+    } else {
+      body.textContent = m.body;
+    }
+
+    if (mine) {
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'msg-del';
+      del.textContent = '×';
+      del.title = '删除这条消息';
+      del.addEventListener('click', () => removeMsg(m.id, true));
+      body.appendChild(del);
+    }
+
+    wrap.appendChild(body);
+    return wrap;
+  }
+
+  function lightbox(src: string) {
+    const box = document.createElement('div');
+    box.className = 'lightbox';
+    const img = document.createElement('img');
+    img.src = src;
+    box.appendChild(img);
+    box.addEventListener('click', () => box.remove());
+    document.body.appendChild(box);
+  }
+
+  function push(m: Msg, { persist = true, publish = false } = {}) {
+    if (msgs.some((x) => x.id === m.id)) return;
+    msgs.push(m);
+    msgs.sort((a, b) => a.t - b.t);
+    if (msgs.length > cfg.keepMessages) msgs = msgs.slice(-cfg.keepMessages);
+    if (persist) save();
+    draw();
+    if (publish && client && client.connected) {
+      client.publish(channel, JSON.stringify(m));
+    }
+  }
+
+  function removeMsg(id: string, publish: boolean) {
+    msgs = msgs.filter((m) => m.id !== id);
+    save();
+    draw();
+    if (publish && client && client.connected) {
+      client.publish(channel, JSON.stringify({ kind: 'del', id }));
+    }
+  }
+
+  /** 按需加载 mqtt 客户端（322KB，只在真正要聊天时才拉） */
+  function loadMqtt(): Promise<void> {
+    if ((window as any).mqtt) return Promise.resolve();
+    if (mqttLoading) return mqttLoading;
+
+    mqttLoading = new Promise<void>((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = '/mqtt.min.js';
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error('连接组件加载失败'));
+      document.head.appendChild(s);
+    });
+    return mqttLoading;
+  }
+
+  function setConn(state: 'on' | 'off' | 'wait', text: string) {
+    const dot = $<HTMLSpanElement>('#dot');
+    dot.className = 'dot' + (state === 'wait' ? '' : ' ' + state);
+    $<HTMLSpanElement>('#conn').textContent = text;
+  }
+
+  async function connect() {
+    setConn('wait', '连接中…');
+    try {
+      await loadMqtt();
+    } catch {
+      setConn('off', '连接组件加载失败');
+      toast('网络不畅，先看看已收到的消息吧');
+      return;
+    }
+
+    const mqtt = (window as any).mqtt;
+    client = mqtt.connect(cfg.broker, {
+      clientId: 'yswq_' + Math.random().toString(16).slice(2, 10),
+      reconnectPeriod: 4000,
+      connectTimeout: 12000,
+      clean: true,
+    });
+
+    client.on('connect', () => {
+      setConn('on', '已连接');
+      client.subscribe(channel, { qos: 0 });
+    });
+
+    client.on('reconnect', () => setConn('wait', '重新连接…'));
+    client.on('close', () => setConn('off', '已断开'));
+    client.on('error', () => setConn('off', '连接出错'));
+
+    client.on('message', (_topic: string, payload: Uint8Array) => {
+      let data: any;
+      try {
+        data = JSON.parse(new TextDecoder().decode(payload));
+      } catch {
+        return;
+      }
+
+      if (data && data.kind === 'del') {
+        msgs = msgs.filter((m) => m.id !== data.id);
+        save();
+        draw();
+        return;
+      }
+
+      if (!data || !data.id || typeof data.body !== 'string') return;
+      if (data.nick === nick) return; // 自己发的已经在本地了
+      push(
+        {
+          id: String(data.id),
+          nick: String(data.nick || '访客').slice(0, 16),
+          type: data.type === 'img' ? 'img' : 'text',
+          body: data.body,
+          t: Number(data.t) || Date.now(),
+          pub: true,
+        },
+        { persist: true },
+      );
+    });
+  }
+
+  function enterRoom(room: PublicRoom) {
+    $<HTMLHeadingElement>('#roomName').textContent = room.name;
+    load();
+    show('room');
+    draw();
+    connect();
+    maybeResumeComposer();
+  }
+
+  function maybeResumeComposer() {
+    $<HTMLInputElement>('#text').focus();
+  }
+
+  // ---- 发消息
+  $<HTMLFormElement>('#composer').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const input = $<HTMLInputElement>('#text');
+    const body = input.value.trim();
+    if (!body) return;
+
+    push({ id: uid(), nick, type: 'text', body, t: Date.now(), pub: true }, { publish: true });
+    input.value = '';
+    input.focus();
+  });
+
+  // ---- 发图片：先压到适合传输的尺寸
+  $<HTMLInputElement>('#file').addEventListener('change', async (e) => {
+    const input = e.target as HTMLInputElement;
+    const file = input.files && input.files[0];
+    input.value = '';
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast('只能发图片');
+      return;
+    }
+
+    const attach = $<HTMLLabelElement>('.attach');
+    attach.classList.add('busy');
+
+    try {
+      const dataUrl = await compress(file);
+      const kb = Math.round((dataUrl.length * 0.75) / 1024);
+      if (kb > 380) {
+        toast('这张图压不动了，换一张小点的试试');
+        return;
+      }
+      push({ id: uid(), nick, type: 'img', body: dataUrl, t: Date.now(), pub: true }, {
+        publish: true,
+      });
+    } catch {
+      toast('图片处理失败');
+    } finally {
+      attach.classList.remove('busy');
+    }
+  });
+
+  /** 缩到最长边 1280 并逐档降质，控制体积在传输范围内 */
+  function compress(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const MAX = 1280;
+        let { width: w, height: h } = img;
+        if (w > MAX || h > MAX) {
+          const k = Math.min(MAX / w, MAX / h);
+          w = Math.round(w * k);
+          h = Math.round(h * k);
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return reject(new Error('no ctx'));
+        ctx.drawImage(img, 0, 0, w, h);
+
+        let q = 0.72;
+        let out = canvas.toDataURL('image/jpeg', q);
+        while (out.length * 0.75 > 300 * 1024 && q > 0.32) {
+          q -= 0.1;
+          out = canvas.toDataURL('image/jpeg', q);
+        }
+        resolve(out);
+      };
+
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error('decode fail'));
+      };
+      img.src = url;
+    });
+  }
+
+  // ---- 顶栏按钮
+  $<HTMLButtonElement>('#btnNick').addEventListener('click', () => {
+    const next = window.prompt('换个昵称', nick);
+    if (next == null) return;
+    const v = next.trim().slice(0, 16);
+    if (!v || v === nick) return;
+    const old = nick;
+    nick = v;
+    localStorage.setItem(NICK_KEY, v);
+    msgs.forEach((m) => {
+      if (m.nick === old) m.nick = v;
+    });
+    save();
+    draw();
+    toast('昵称已改为 ' + v);
+  });
+
+  $<HTMLButtonElement>('#btnClear').addEventListener('click', () => {
+    if (!window.confirm('清空这台设备上这个房间的记录？别人那边不受影响。')) return;
+    msgs = [];
+    save();
+    draw();
+    toast('本机记录已清空');
+  });
+
+  $<HTMLButtonElement>('#btnLeave').addEventListener('click', () => {
+    try {
+      client && client.end(true);
+    } catch {
+      /* ignore */
+    }
+    client = null;
+    sessionStorage.removeItem(SESSION_KEY);
+    current = null;
+    channel = '';
+    msgs = [];
+    show('pick');
+  });
+
+  // ------------------------------------------------------------------ 自动恢复上次的房间
+  (async function boot() {
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null');
+      if (saved && saved.channel && saved.roomId) {
+        const room = cfg.rooms.find((r) => r.id === saved.roomId);
+        if (room) {
+          current = room;
+          channel = saved.channel;
+          nick = saved.nick || nick || '访客';
+          enterRoom(room);
+          return;
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+    show('pick');
+  })();
+</script>
