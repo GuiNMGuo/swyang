@@ -29,7 +29,7 @@ export const SITE = {
 export const NAV = [
   { label: '作品', href: '/work' },
   { label: '工具', href: '/tools' },
-  { label: '留言', href: '/chat' },
+  { label: '聊天室', href: '/chat' },
   { label: '关于', href: '/about' },
 ];
 

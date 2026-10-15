@@ -227,7 +227,13 @@ const cfg = {
   <script type="application/json" id="chat-cfg" set:html={JSON.stringify(cfg)}></script>
 </BaseLayout>
 
-<style>
+<style is:global>
+  /* 为什么整个页面样式都用 is:global：
+     Astro 默认会把 <style> 编译成带作用域的选择器，例如
+     `.bubble[data-astro-cid-sedch3wl]`。但本页的消息行和气泡是 JS 在运行时
+     createElement 出来的（见 bubble() 函数），它们天生没有 data-astro-cid-* 属性，
+     于是这些选择器一条都命中不了 —— 表现为气泡没有背景、没有内边距、消息行不是 flex。
+     （模板里写死的 .msg-list / .msg-empty 带有属性所以正常，最容易看漏这一点。） */
   /* ---------- 公共小件 ---------- */
   .room-lock {
     display: grid;
@@ -401,6 +407,11 @@ const cfg = {
   .msg {
     display: flex;
     flex-direction: column;
+    /* align-items 必须显式写 flex-start：
+       父容器 .msg-list 是 column 方向，交叉轴默认 stretch，
+       不写的话别人的气泡会被拉伸成 78% 满宽（两个字也撑满一行），
+       而 .msg.me 写了 flex-end 所以看不出来 —— 是不对称的隐藏 bug。 */
+    align-items: flex-start;
     max-width: 78%;
     animation: msgIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
