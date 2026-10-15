@@ -4,6 +4,7 @@
   "broker": "wss://broker.emqx.io:8084/mqtt",
   "maxFileMB": 20,
   "keepMessages": 200,
+  "uploadUrl": "",
   "rooms": [
     {
       "id": "demo",

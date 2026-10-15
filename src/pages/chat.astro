@@ -6,6 +6,7 @@ const cfg = {
   broker: CHAT.broker,
   maxFileMB: CHAT.maxFileMB,
   keepMessages: CHAT.keepMessages,
+  uploadUrl: CHAT.uploadUrl,
   rooms: CHAT.publicRooms,
 };
 ---
@@ -27,68 +28,77 @@ const cfg = {
         <p class="mt-3 max-w-xl text-[14.5px] leading-relaxed muted">{CHAT.subtitle}</p>
       </div>
 
-      {
-        CHAT.publicRooms.length === 0 ? (
-          <div class="soft-card p-8 text-center">
-            <div class="text-3xl">🔒</div>
-            <h2 class="mt-4 text-[16.5px] font-extrabold">还没有房间</h2>
-            <p class="mt-2 text-[13.5px] leading-relaxed muted">
-              去后台加一个房间，填上名字和密码，它就会出现在这里。
-            </p>
-            <a href="/admin" class="btn-primary mt-6">打开后台加房间</a>
-          </div>
-        ) : (
-          <div class="grid gap-5 sm:grid-cols-2">
-            {CHAT.publicRooms.map((room) => (
-              <button
-                type="button"
-                class="room-card soft-card tilt-card flex flex-col items-start p-6 text-left"
-                data-room={room.id}
-              >
-                <span class="room-lock" aria-hidden="true">
-                  <svg
-                    width="17"
-                    height="17"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <rect x="3.5" y="10.5" width="17" height="10.5" rx="2.5" />
-                    <path d="M7.5 10.5V7.5a4.5 4.5 0 0 1 9 0v3" />
-                  </svg>
-                </span>
-                <span class="mt-4 text-[16.5px] font-extrabold leading-snug">{room.name}</span>
-                {room.desc && (
-                  <span class="mt-2 text-[13px] leading-relaxed muted">{room.desc}</span>
-                )}
-                <span class="mt-5 inline-flex items-center gap-1.5 text-[13px] font-bold room-go">
-                  输入密码进入
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2.6"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path d="M5 12h13M13 6l6 6-6 6" />
-                  </svg>
-                </span>
-              </button>
-            ))}
-          </div>
-        )
-      }
+      <!-- 房间列表由脚本渲染（公共房间 + 本机自建房间） -->
+      <div id="roomEmpty" class="soft-card p-8 text-center" hidden>
+        <div class="text-3xl">🔒</div>
+        <h2 class="mt-4 text-[16.5px] font-extrabold">还没有房间</h2>
+        <p class="mt-2 text-[13.5px] leading-relaxed muted">
+          在下面自己开一个，或者去后台建一个。
+        </p>
+      </div>
+      <div id="roomGrid" class="grid gap-5 sm:grid-cols-2"></div>
 
       <p class="mt-8 text-[12.5px] leading-relaxed faint">
         房间和密码在 <a href="/admin" class="underline">后台</a> 里管理。密码只在这台设备上校验，
         不会明文发到网上；不知道密码就进不了对应的房间。
       </p>
+
+      <!-- ==================== 自己开一个房间 ==================== -->
+      <div class="create-box mt-10">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="text-[15.5px] font-extrabold">自己开一个房间</h2>
+            <p class="mt-1 text-[12.5px] leading-relaxed faint">
+              起个名字、定个密码，马上就能聊。把名字和密码告诉朋友，他们就能进来。
+            </p>
+          </div>
+          <button type="button" id="btnCreate" class="btn-primary shrink-0">新建房间</button>
+        </div>
+
+        <form id="createForm" class="create-form mt-5" autocomplete="off" hidden>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <label class="field">
+              <span>房间名</span>
+              <input
+                id="newRoomName"
+                type="text"
+                maxlength="24"
+                autocomplete="off"
+                placeholder="比如：周末闲聊"
+              />
+            </label>
+            <label class="field">
+              <span>房间密码</span>
+              <input
+                id="newRoomPw"
+                type="password"
+                maxlength="64"
+                autocomplete="off"
+                placeholder="自己定一个，别忘了"
+              />
+            </label>
+          </div>
+          <p id="createErr" class="mt-3 text-[13px] font-semibold" style="color: #b3341f;" hidden></p>
+          <div class="mt-4 flex items-center gap-3">
+            <button type="submit" id="createGo" class="btn-primary">建好并进入</button>
+            <button type="button" id="createCancel" class="mini-btn">取消</button>
+          </div>
+          <p class="mt-3 text-[12px] leading-relaxed faint">
+            自己建的房间只存在这台设备上。换电脑或清了浏览器数据就没了，
+            密码也找不回来 —— 想长期保留就在后台建。
+          </p>
+        </form>
+
+        <!-- 把房间分享给朋友 -->
+        <div id="shareBox" class="share-box mt-5" hidden>
+          <p class="text-[13px] font-bold">房间建好了，把下面这段发给朋友</p>
+          <textarea id="shareText" class="share-text mt-2" readonly rows="3"></textarea>
+          <div class="mt-2 flex items-center gap-3">
+            <button type="button" id="shareCopy" class="mini-btn">复制</button>
+            <span id="shareHint" class="text-[12px] faint"></span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- ============================ 第二步：输密码 ============================ -->
@@ -129,7 +139,13 @@ const cfg = {
 
           <label class="field">
             <span>你的昵称（可选）</span>
-            <input id="nick" type="text" maxlength="16" autocomplete="off" placeholder="朋友看到的名字" />
+            <input
+              id="nick"
+              type="text"
+              maxlength="16"
+              autocomplete="off"
+              placeholder="留空就显示为匿名"
+            />
           </label>
 
           <p id="gateHint" class="mt-1 text-[12.5px]" style="color: var(--text-soft);"></p>
@@ -195,8 +211,8 @@ const cfg = {
       </div>
 
       <form id="composer" class="composer" autocomplete="off">
-        <label class="attach" title="发一张图片">
-          <input id="file" type="file" accept="image/*" hidden />
+        <label class="attach" title="发图片或文件（视频也行）">
+          <input id="file" type="file" hidden />
           <svg
             width="18"
             height="18"
@@ -216,9 +232,15 @@ const cfg = {
         <button type="submit" id="btnSend" class="send-btn">发送</button>
       </form>
 
-      <p class="mt-3 text-[12px] leading-relaxed faint">
-        消息存在你本机浏览器里，同时通过公共通道实时同步给房间里的人。点自己消息右边的「×」可以删掉。
-      </p>
+      <div class="room-foot">
+        <p class="text-[12px] leading-relaxed faint">
+          消息存在你本机浏览器里，同时通过公共通道实时同步给房间里的人。点自己消息右边的「×」可以删掉。
+        </p>
+        <p class="mt-2 text-[12px] leading-relaxed faint">
+          <b class="keep-strong">本机最多保留最近 <span id="keepNum">200</span> 条</b>，超过后最早的会被自动丢掉
+          （换来的是打开快、不占地方）。晚进来的人看不到之前的历史消息。
+        </p>
+      </div>
     </div>
 
     <div id="toast" class="toast" hidden></div>
@@ -255,9 +277,132 @@ const cfg = {
     cursor: pointer;
     font: inherit;
     color: inherit;
+    position: relative;
   }
   .room-go {
     color: var(--color-ink-600);
+  }
+
+  /* 「我建的」标签 */
+  .room-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 99px;
+    color: var(--color-ink-600);
+    background: var(--color-ink-50, #eef4f1);
+    border: 1px solid var(--border);
+  }
+  /* 自建房间的删除按钮：平时半透明，悬停才明显 */
+  .room-del {
+    position: absolute;
+    right: 14px;
+    bottom: 14px;
+    padding: 3px 9px;
+    font-size: 11.5px;
+    font-weight: 700;
+    border-radius: 99px;
+    color: #a13620;
+    background: #fdeeea;
+    border: 1px solid #f2cfc5;
+    cursor: pointer;
+    opacity: 0.75;
+    transition: opacity 0.16s;
+  }
+  .room-del:hover {
+    opacity: 1;
+  }
+
+  /* 新建房间区块 */
+  .create-box {
+    padding: 22px 24px 24px;
+    border: 1px dashed var(--border);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.5);
+  }
+  .create-form {
+    border-top: 1px solid var(--border);
+    padding-top: 20px;
+  }
+
+  .share-box {
+    padding: 16px 18px;
+    border-radius: 14px;
+    background: var(--color-ink-50, #eef4f1);
+    border: 1px solid var(--border);
+  }
+  .share-text {
+    width: 100%;
+    font: inherit;
+    font-size: 13px;
+    line-height: 1.6;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #fff;
+    color: var(--text);
+    resize: vertical;
+  }
+
+  /* 消息底部说明 */
+  .room-foot {
+    margin-top: 12px;
+  }
+  .keep-strong {
+    color: var(--text-mid);
+  }
+
+  /* 文件消息卡片 */
+  .file-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 190px;
+    padding: 9px 13px 9px 10px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    color: inherit;
+    text-decoration: none;
+  }
+  .msg:not(.me) .file-card {
+    background: #f6f5f0;
+    border-color: var(--border);
+  }
+  .file-ico {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    flex: 0 0 30px;
+    border-radius: 9px;
+    font-size: 13px;
+    background: rgba(255, 255, 255, 0.22);
+  }
+  .msg:not(.me) .file-card .file-ico {
+    background: #fff;
+    border: 1px solid var(--border);
+  }
+  .file-meta {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .file-meta b {
+    font-size: 13.5px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 220px;
+  }
+  .file-meta small {
+    font-size: 11.5px;
+    opacity: 0.75;
+  }
+  .file-card:hover {
+    filter: brightness(0.97);
   }
 
   .link-back {
@@ -624,13 +769,21 @@ const cfg = {
     broker: string;
     maxFileMB: number;
     keepMessages: number;
+    /** 文件上传用的中转端点（Cloudflare Worker，密钥存在 Worker 里，前端拿不到） */
+    uploadUrl: string;
     rooms: PublicRoom[];
   };
   type Msg = {
     id: string;
     nick: string;
-    type: 'text' | 'img';
+    type: 'text' | 'img' | 'file';
     body: string;
+    /** 文件名（type 为 file 时用） */
+    fileName?: string;
+    /** 文件大小，字节 */
+    fileSize?: number;
+    /** 发送者标识，用来判断「是不是我发的」，与昵称无关 */
+    self?: string;
     t: number;
     pub: boolean;
   };
@@ -693,8 +846,40 @@ const cfg = {
 
   // ------------------------------------------------------------------ 配置
   const cfg: Config = JSON.parse($('#chat-cfg').textContent || '{}');
+  // 允许用 ?upload=... 临时指定上传端点（本地联调很方便，线上也能应急切换）
+  try {
+    const q = new URLSearchParams(location.search).get('upload');
+    if (q) cfg.uploadUrl = q;
+  } catch {
+    /* ignore */
+  }
   const SESSION_KEY = 'yswq_session';
   const NICK_KEY = 'yswq_nick';
+  // 自己这次会话的身份标识 —— 不依赖昵称。
+  // 用过昵称来判断「这条是不是我发的」是错的：两个人都没填昵称时会都叫默认名，
+  // 对方的消息就会被当成自己发的直接丢掉。改用一个随机的 selfId 来判。
+  const SELF_KEY = 'yswq_self';
+  let selfId = '';
+  try {
+    selfId = localStorage.getItem(SELF_KEY) || '';
+  } catch {
+    /* 隐私模式下读不到，下面兜底 */
+  }
+  if (!selfId) {
+    selfId = Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+    try {
+      localStorage.setItem(SELF_KEY, selfId);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  /**
+   * 没填昵称时的展示名。
+   * 带上 selfId 的后两位，避免同一房间里多个匿名用户同名
+   * —— 同名并不会丢消息（已改用 selfId 判断），但看起来分不清谁是谁。
+   */
+  const DEFAULT_NICK = '匿名' + selfId.slice(-2);
 
   let current: PublicRoom | null = null;
   let channel = '';
@@ -714,9 +899,156 @@ const cfg = {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  // ------------------------------------------------------------------ 自己建的房间（只存本机）
+  /**
+   * 访客自助建的房间存在 localStorage，不进仓库。
+   * 结构：{ id, name, desc, salt, check, createdAt, lastUsed }
+   *
+   * 回收规则：
+   *  - 上限 LOCAL_ROOM_MAX 个，超了提示先删旧的
+   *  - 30 天没进过（lastUsed）就自动清掉，避免越攒越多
+   */
+  const LOCAL_ROOMS_KEY = 'yswq_local_rooms';
+  const LOCAL_ROOM_MAX = 12;
+  const ROOM_TTL_DAYS = 30;
+
+  const storeKey = (roomId: string) => `yswq_room_${roomId}`;
+
+  type LocalRoom = PublicRoom & { createdAt: number; lastUsed: number; local: true };
+
+  function readLocalRooms(): LocalRoom[] {
+    let list: LocalRoom[] = [];
+    try {
+      const raw = JSON.parse(localStorage.getItem(LOCAL_ROOMS_KEY) || '[]');
+      if (Array.isArray(raw)) {
+        list = raw.filter(
+          (r): r is LocalRoom =>
+            !!r && typeof r.id === 'string' && typeof r.salt === 'string' && typeof r.check === 'string',
+        );
+      }
+    } catch {
+      list = [];
+    }
+
+    // 顺手清掉长期没进过的房间
+    const cutoff = Date.now() - ROOM_TTL_DAYS * 86400_000;
+    const keep = list.filter((r) => (r.lastUsed || r.createdAt || 0) >= cutoff);
+    if (keep.length !== list.length) writeLocalRooms(keep);
+    return keep;
+  }
+
+  function writeLocalRooms(list: LocalRoom[]) {
+    try {
+      localStorage.setItem(LOCAL_ROOMS_KEY, JSON.stringify(list));
+    } catch {
+      /* ignore */
+    }
+  }
+
+  /** 公共房间 + 本机房间一起给界面用 */
+  function allRooms(): PublicRoom[] {
+    return [...cfg.rooms, ...readLocalRooms()];
+  }
+
+  const isLocalRoom = (id: string) => readLocalRooms().some((r) => r.id === id);
+
+  function touchLocalRoom(id: string) {
+    const list = readLocalRooms();
+    const hit = list.find((r) => r.id === id);
+    if (!hit) return;
+    hit.lastUsed = Date.now();
+    writeLocalRooms(list);
+  }
+
+  function removeLocalRoom(id: string) {
+    writeLocalRooms(readLocalRooms().filter((r) => r.id !== id));
+    try {
+      localStorage.removeItem(storeKey(id));
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function drawRooms() {
+    const host = $<HTMLDivElement>('#roomGrid');
+    const list = allRooms();
+
+    const emptyEl2 = $<HTMLDivElement>('#roomEmpty');
+    emptyEl2.hidden = list.length > 0;
+
+    host.innerHTML = '';
+    list.forEach((room) => {
+      const local = isLocalRoom(room.id);
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'room-card soft-card tilt-card flex flex-col items-start p-6 text-left';
+      btn.dataset.room = room.id;
+
+      const head = document.createElement('div');
+      head.className = 'flex w-full items-start justify-between gap-2';
+
+      const lock = document.createElement('span');
+      lock.className = 'room-lock';
+      lock.setAttribute('aria-hidden', 'true');
+      lock.innerHTML =
+        '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="10.5" width="17" height="10.5" rx="2.5"/><path d="M7.5 10.5V7.5a4.5 4.5 0 0 1 9 0v3"/></svg>';
+      head.appendChild(lock);
+
+      if (local) {
+        const tag = document.createElement('span');
+        tag.className = 'room-tag';
+        tag.textContent = '我建的';
+        head.appendChild(tag);
+      }
+      btn.appendChild(head);
+
+      const name = document.createElement('span');
+      name.className = 'mt-4 text-[16.5px] font-extrabold leading-snug';
+      name.textContent = room.name;
+      btn.appendChild(name);
+
+      if (room.desc) {
+        const d = document.createElement('span');
+        d.className = 'mt-2 text-[13px] leading-relaxed muted';
+        d.textContent = room.desc;
+        btn.appendChild(d);
+      }
+
+      const go = document.createElement('span');
+      go.className = 'mt-5 inline-flex items-center gap-1.5 text-[13px] font-bold room-go';
+      go.innerHTML =
+        '输入密码进入<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg>';
+      btn.appendChild(go);
+
+      if (local) {
+        const del = document.createElement('span');
+        del.className = 'room-del';
+        del.setAttribute('role', 'button');
+        del.setAttribute('tabindex', '0');
+        del.title = '删掉这个房间（连同本机记录）';
+        del.textContent = '删除';
+        const kill = (ev: Event) => {
+          ev.stopPropagation();
+          ev.preventDefault();
+          if (!window.confirm(`删掉房间「${room.name}」？\n本机这个房间的消息记录也会一起清掉。`)) return;
+          removeLocalRoom(room.id);
+          drawRooms();
+          toast('房间已删掉');
+        };
+        del.addEventListener('click', kill);
+        del.addEventListener('keydown', (ev) => {
+          if ((ev as KeyboardEvent).key === 'Enter') kill(ev);
+        });
+        btn.appendChild(del);
+      }
+
+      host.appendChild(btn);
+    });
+  }
+
   // ------------------------------------------------------------------ 第一步：选房间
   function openGate(roomId: string) {
-    const room = cfg.rooms.find((r) => r.id === roomId);
+    const room = allRooms().find((r) => r.id === roomId);
     if (!room) return;
     current = room;
 
@@ -730,7 +1062,8 @@ const cfg = {
     const pw = $<HTMLInputElement>('#pw');
     pw.value = '';
     const nickEl = $<HTMLInputElement>('#nick');
-    nickEl.value = nick;
+    // 只回填用户**自己填过**的昵称；没填过就留空
+    nickEl.value = localStorage.getItem(NICK_KEY) || '';
 
     show('gate');
     window.setTimeout(() => pw.focus(), 120);
@@ -788,8 +1121,15 @@ const cfg = {
       const chanKey = await deriveKey(current.salt, password, 'chan');
 
       ok = true;
-      nick = $<HTMLInputElement>('#nick').value.trim() || nick || '访客';
-      localStorage.setItem(NICK_KEY, nick);
+      // 昵称留空就用默认展示名，但**不写进 localStorage**
+      //（否则下次进房间会被回填，用户会以为自己填过）
+      const typed = $<HTMLInputElement>('#nick').value.trim().slice(0, 16);
+      if (typed) {
+        nick = typed;
+        localStorage.setItem(NICK_KEY, typed);
+      } else {
+        nick = DEFAULT_NICK;
+      }
 
       channel = channelOf(current.id, chanKey);
       sessionStorage.setItem(
@@ -806,12 +1146,126 @@ const cfg = {
     }
   });
 
+  // ------------------------------------------------------------------ 自己开一个房间
+  const createForm = $<HTMLFormElement>('#createForm');
+  const createErr = $<HTMLParagraphElement>('#createErr');
+
+  $<HTMLButtonElement>('#btnCreate').addEventListener('click', () => {
+    createForm.hidden = !createForm.hidden;
+    if (!createForm.hidden) {
+      createErr.hidden = true;
+      $<HTMLInputElement>('#newRoomName').focus();
+    }
+  });
+
+  $<HTMLButtonElement>('#createCancel').addEventListener('click', () => {
+    createForm.hidden = true;
+    createErr.hidden = true;
+  });
+
+  /** 房间名 → 稳定的 id（同名会得到同一个 id，天然防重复建房） */
+  async function roomIdOf(name: string): Promise<string> {
+    const buf = await crypto.subtle.digest('SHA-256', enc.encode('yswq-room|' + name.trim()));
+    return toHex(buf).slice(0, 12);
+  }
+
+  /** 随机盐，公开无妨；密码本身永远不会被存下来 */
+  function makeSalt(): string {
+    const b = new Uint8Array(16);
+    crypto.getRandomValues(b);
+    return toHex(b.buffer);
+  }
+
+  createForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = $<HTMLButtonElement>('#createGo');
+    const nameEl = $<HTMLInputElement>('#newRoomName');
+    const pwEl = $<HTMLInputElement>('#newRoomPw');
+    const name = nameEl.value.trim().slice(0, 24);
+    const pw = pwEl.value;
+
+    const fail = (msg: string) => {
+      createErr.textContent = msg;
+      createErr.hidden = false;
+    };
+
+    if (!name) return fail('先给房间起个名字。');
+    if (pw.length < 4) return fail('密码至少 4 位，太短容易被猜到。');
+
+    const existed = allRooms().find((r) => r.name === name);
+    if (existed) return fail(`已经有一个叫「${name}」的房间了，换个名字，或者直接进那个。`);
+
+    const locals = readLocalRooms();
+    if (locals.length >= LOCAL_ROOM_MAX) {
+      return fail(`自己建的最多 ${LOCAL_ROOM_MAX} 个，先删掉一个不用的再建。`);
+    }
+
+    btn.disabled = true;
+    btn.textContent = '正在建…';
+    try {
+      const id = await roomIdOf(name);
+      const salt = makeSalt();
+      const check = await deriveKey(salt, pw, 'check');
+
+      const room: LocalRoom = {
+        id,
+        name,
+        desc: '',
+        salt,
+        check,
+        createdAt: Date.now(),
+        lastUsed: Date.now(),
+        local: true,
+      };
+      writeLocalRooms([...locals, room]);
+
+      // 建完立刻进去，省得再输一遍密码
+      current = room;
+      nick = localStorage.getItem(NICK_KEY) || DEFAULT_NICK;
+      const chanKey = await deriveKey(salt, pw, 'chan');
+      channel = channelOf(id, chanKey);
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify({ roomId: id, channel, nick }));
+
+      pwEl.value = '';
+      nameEl.value = '';
+      createForm.hidden = true;
+
+      drawRooms();
+      showShare(name, pw);
+      enterRoom(room);
+    } catch {
+      fail('建房间失败了，再试一次。');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '建好并进入';
+    }
+  });
+
+  /** 建房后给出可复制的分享文案 */
+  function showShare(name: string, pw: string) {
+    const box = $<HTMLDivElement>('#shareBox');
+    const ta = $<HTMLTextAreaElement>('#shareText');
+    const link = location.origin + '/chat/';
+    ta.value = `来聊天室找我：${name}\n地址：${link}\n房间密码：${pw}\n（进去后填这个名字和密码就行）`;
+    box.hidden = false;
+
+    $<HTMLButtonElement>('#shareCopy').onclick = async () => {
+      const hint = $<HTMLSpanElement>('#shareHint');
+      try {
+        await navigator.clipboard.writeText(ta.value);
+        hint.textContent = '已复制 ✓';
+      } catch {
+        ta.select();
+        hint.textContent = '请手动复制（已帮你选中）';
+      }
+      window.setTimeout(() => (hint.textContent = ''), 2600);
+    };
+  }
+
   // ------------------------------------------------------------------ 第三步：聊天室
   let msgs: Msg[] = [];
   let client: any = null;
   let mqttLoading: Promise<void> | null = null;
-
-  const storeKey = (roomId: string) => `yswq_room_${roomId}`;
 
   function load() {
     if (!current) return;
@@ -844,7 +1298,7 @@ const cfg = {
   }
 
   function bubble(m: Msg): HTMLElement {
-    const mine = m.nick === nick;
+    const mine = m.self ? m.self === selfId : m.nick === nick && m.nick !== DEFAULT_NICK;
     const wrap = document.createElement('div');
     wrap.className = 'msg' + (mine ? ' me' : '');
     wrap.dataset.id = m.id;
@@ -866,6 +1320,8 @@ const cfg = {
       img.loading = 'lazy';
       img.addEventListener('click', () => lightbox(m.body));
       body.appendChild(img);
+    } else if (m.type === 'file') {
+      body.appendChild(fileCard(m));
     } else {
       body.textContent = m.body;
     }
@@ -882,6 +1338,42 @@ const cfg = {
 
     wrap.appendChild(body);
     return wrap;
+  }
+
+  /** 人类可读的文件大小 */
+  function humanSize(n?: number) {
+    if (!n || n <= 0) return '';
+    if (n < 1024) return n + ' B';
+    if (n < 1024 * 1024) return (n / 1024).toFixed(0) + ' KB';
+    return (n / 1024 / 1024).toFixed(n / 1024 / 1024 < 10 ? 1 : 0) + ' MB';
+  }
+
+  /** 文件消息：图标 + 文件名 + 大小，点一下下载 */
+  function fileCard(m: Msg): HTMLElement {
+    const a = document.createElement('a');
+    a.className = 'file-card';
+    a.href = m.body;
+    a.download = m.fileName || '';
+    a.target = '_blank';
+    a.rel = 'noopener';
+
+    const icon = document.createElement('span');
+    icon.className = 'file-ico';
+    const isVideo = /\.(mp4|mov|webm|m4v|avi|mkv)$/i.test(m.fileName || '');
+    icon.textContent = isVideo ? '▶' : '↓';
+
+    const meta = document.createElement('span');
+    meta.className = 'file-meta';
+    const nm = document.createElement('b');
+    nm.textContent = m.fileName || '文件';
+    meta.appendChild(nm);
+    const sz = document.createElement('small');
+    sz.textContent = humanSize(m.fileSize) || '点击下载';
+    meta.appendChild(sz);
+
+    a.appendChild(icon);
+    a.appendChild(meta);
+    return a;
   }
 
   function lightbox(src: string) {
@@ -979,13 +1471,18 @@ const cfg = {
       }
 
       if (!data || !data.id || typeof data.body !== 'string') return;
-      if (data.nick === nick) return; // 自己发的已经在本地了
+      // 用 selfId 判断是不是自己发的（自己发的已在本地显示过了）
+      if (data.self && data.self === selfId) return;
+      if (!data.self && data.nick === nick) return;
       push(
         {
           id: String(data.id),
-          nick: String(data.nick || '访客').slice(0, 16),
-          type: data.type === 'img' ? 'img' : 'text',
+          nick: String(data.nick || '匿名').slice(0, 16),
+          type: data.type === 'img' ? 'img' : data.type === 'file' ? 'file' : 'text',
           body: data.body,
+          fileName: typeof data.fileName === 'string' ? data.fileName.slice(0, 120) : undefined,
+          fileSize: Number(data.fileSize) || undefined,
+          self: typeof data.self === 'string' ? data.self : undefined,
           t: Number(data.t) || Date.now(),
           pub: true,
         },
@@ -996,6 +1493,8 @@ const cfg = {
 
   function enterRoom(room: PublicRoom) {
     $<HTMLHeadingElement>('#roomName').textContent = room.name;
+    $<HTMLSpanElement>('#keepNum').textContent = String(cfg.keepMessages);
+    if (isLocalRoom(room.id)) touchLocalRoom(room.id);
     load();
     show('room');
     draw();
@@ -1014,42 +1513,122 @@ const cfg = {
     const body = input.value.trim();
     if (!body) return;
 
-    push({ id: uid(), nick, type: 'text', body, t: Date.now(), pub: true }, { publish: true });
+    push({ id: uid(), nick, type: 'text', body, t: Date.now(), pub: true, self: selfId }, { publish: true });
     input.value = '';
     input.focus();
   });
 
-  // ---- 发图片：先压到适合传输的尺寸
+  // ---- 发附件
+  // 图片：压到能直接塞进消息里（走公共通道，秒到）
+  // 其他文件（含 MP4）：走上传端点换成链接，再当消息发出去
   $<HTMLInputElement>('#file').addEventListener('change', async (e) => {
     const input = e.target as HTMLInputElement;
     const file = input.files && input.files[0];
     input.value = '';
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      toast('只能发图片');
+    const attach = $<HTMLLabelElement>('.attach');
+    const isImage = file.type.startsWith('image/');
+
+    if (isImage) {
+      attach.classList.add('busy');
+      try {
+        const dataUrl = await compress(file);
+        const kb = Math.round((dataUrl.length * 0.75) / 1024);
+        if (kb > 380) {
+          toast('这张图压不动了，换一张小点的试试');
+          return;
+        }
+        push({ id: uid(), nick, type: 'img', body: dataUrl, t: Date.now(), pub: true, self: selfId }, {
+          publish: true,
+        });
+      } catch {
+        toast('图片处理失败');
+      } finally {
+        attach.classList.remove('busy');
+      }
       return;
     }
 
-    const attach = $<HTMLLabelElement>('.attach');
-    attach.classList.add('busy');
+    // ---- 其他文件：需要上传端点
+    if (!cfg.uploadUrl) {
+      toast('传文件需要在后台配置上传通道（图片可以直接发）');
+      return;
+    }
 
+    const limit = cfg.maxFileMB * 1024 * 1024;
+    if (file.size > limit) {
+      toast(`文件最大 ${cfg.maxFileMB} MB，这个太大了`);
+      return;
+    }
+
+    attach.classList.add('busy');
+    toast('正在上传…');
     try {
-      const dataUrl = await compress(file);
-      const kb = Math.round((dataUrl.length * 0.75) / 1024);
-      if (kb > 380) {
-        toast('这张图压不动了，换一张小点的试试');
-        return;
-      }
-      push({ id: uid(), nick, type: 'img', body: dataUrl, t: Date.now(), pub: true }, {
-        publish: true,
-      });
-    } catch {
-      toast('图片处理失败');
+      const url = await uploadFile(file);
+      push(
+        {
+          id: uid(),
+          nick,
+          type: 'file',
+          body: url,
+          fileName: file.name,
+          fileSize: file.size,
+          t: Date.now(),
+          pub: true,
+          self: selfId,
+        },
+        { publish: true },
+      );
+      toast('传好了');
+    } catch (err: any) {
+      toast(err && err.message ? err.message : '上传失败，稍后再试');
     } finally {
       attach.classList.remove('busy');
     }
   });
+
+  /**
+   * 把文件传到自己搭的上传端点，换回一个下载链接。
+   * 端点（Cloudflare Worker）负责把文件写进对象存储 —— 真正的密钥在 Worker 里，
+   * 前端拿不到，因为这个仓库是公开的。
+   */
+  function uploadFile(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const form = new FormData();
+      form.append('file', file, file.name);
+
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', cfg.uploadUrl, true);
+      xhr.timeout = 5 * 60 * 1000;
+
+      xhr.upload.onprogress = (ev) => {
+        if (!ev.lengthComputable) return;
+        const pct = Math.round((ev.loaded / ev.total) * 100);
+        const el = $<HTMLSpanElement>('#conn');
+        if (el) el.textContent = `上传中 ${pct}%`;
+      };
+
+      xhr.onload = () => {
+        if (xhr.status < 200 || xhr.status >= 300) {
+          return reject(new Error(`上传失败（${xhr.status}）`));
+        }
+        let data: any;
+        try {
+          data = JSON.parse(xhr.responseText);
+        } catch {
+          return reject(new Error('上传端点返回的不是 JSON'));
+        }
+        const url = data && (data.url || data.downloadUrl);
+        if (!url) return reject(new Error('上传端点没有返回链接'));
+        resolve(String(url));
+      };
+
+      xhr.onerror = () => reject(new Error('网络中断，上传失败'));
+      xhr.ontimeout = () => reject(new Error('上传超时了'));
+      xhr.send(form);
+    });
+  }
 
   /** 缩到最长边 1280 并逐档降质，控制体积在传输范围内 */
   function compress(file: File): Promise<string> {
@@ -1132,14 +1711,15 @@ const cfg = {
 
   // ------------------------------------------------------------------ 自动恢复上次的房间
   (async function boot() {
+    drawRooms();
     try {
       const saved = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null');
       if (saved && saved.channel && saved.roomId) {
-        const room = cfg.rooms.find((r) => r.id === saved.roomId);
+        const room = allRooms().find((r) => r.id === saved.roomId);
         if (room) {
           current = room;
           channel = saved.channel;
-          nick = saved.nick || nick || '访客';
+          nick = saved.nick || DEFAULT_NICK;
           enterRoom(room);
           return;
         }

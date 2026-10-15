@@ -144,6 +144,12 @@ export const CHAT = {
   subtitle: chatData.subtitle ?? '',
   broker: chatData.broker || 'wss://broker.emqx.io:8084/mqtt',
   maxFileMB: Number(chatData.maxFileMB) || 20,
+  /**
+   * 文件上传端点。指向 Cloudflare Worker（或同类代理），
+   * 真正的存储密钥放在 Worker 的环境变量里 —— 仓库是公开的，密钥绝不能进前端。
+   * 留空则关闭文件传输，界面会提示先配置。
+   */
+  uploadUrl: (chatData as any).uploadUrl || '',
   keepMessages: Number(chatData.keepMessages) || 200,
   rooms: rawRooms,
   get publicRooms(): PublicRoom[] {

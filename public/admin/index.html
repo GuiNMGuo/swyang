@@ -1576,6 +1576,63 @@
       }
 
       /* ---------- 图片上传 ---------- */
+      /**
+       * 上传前先在本机压一遍并转成 WebP。
+       * 不压的话一张手机截图就 2MB，几个作品页就能把站点拖到几十兆。
+       */
+      function shrinkImage(file) {
+        return new Promise(function (resolve) {
+          if (!/^image\//.test(file.type) || /gif|svg/i.test(file.type)) {
+            return resolve({ file: file, note: '' });
+          }
+          var url = URL.createObjectURL(file);
+          var img = new Image();
+          img.onload = function () {
+            URL.revokeObjectURL(url);
+            var MAX = 1400;
+            var w = img.naturalWidth;
+            var h = img.naturalHeight;
+            if (w > MAX || h > MAX) {
+              var k = Math.min(MAX / w, MAX / h);
+              w = Math.round(w * k);
+              h = Math.round(h * k);
+            }
+            var cv = document.createElement('canvas');
+            cv.width = w;
+            cv.height = h;
+            var ctx = cv.getContext('2d');
+            if (!ctx) return resolve({ file: file, note: '' });
+            ctx.drawImage(img, 0, 0, w, h);
+
+            cv.toBlob(
+              function (blob) {
+                if (!blob) return resolve({ file: file, note: '' });
+                // 压完反而更大就用原图
+                if (blob.size >= file.size) return resolve({ file: file, note: '' });
+                var base = file.name.replace(/\.[^.]+$/, '');
+                var nf = new File([blob], base + '.webp', { type: 'image/webp' });
+                resolve({
+                  file: nf,
+                  note:
+                    '（自动压缩：' +
+                    (file.size / 1024).toFixed(0) +
+                    ' KB → ' +
+                    (blob.size / 1024).toFixed(0) +
+                    ' KB）',
+                });
+              },
+              'image/webp',
+              0.82
+            );
+          };
+          img.onerror = function () {
+            URL.revokeObjectURL(url);
+            resolve({ file: file, note: '' });
+          };
+          img.src = url;
+        });
+      }
+
       function pickImage(cb) {
         var input = document.createElement('input');
         input.type = 'file';
@@ -1583,21 +1640,25 @@
         input.onchange = async function () {
           var f = input.files && input.files[0];
           if (!f) return;
-          if (f.size > 4 * 1024 * 1024) {
-            if (!confirm('这张图 ' + (f.size / 1048576).toFixed(1) + 'MB，有点大，会让网页变慢。\n\n建议先压缩到 2MB 以内。仍然要上传吗？'))
+
+          var shrunk = await shrinkImage(f);
+          var up = shrunk.file;
+
+          if (up.size > 4 * 1024 * 1024) {
+            if (!confirm('这张图压完还有 ' + (up.size / 1048576).toFixed(1) + 'MB，有点大，会让网页变慢。\n\n仍然要上传吗？'))
               return;
           }
-          log('正在上传 ' + f.name + '（' + (f.size / 1024).toFixed(0) + ' KB）…');
+          log('正在上传 ' + up.name + '（' + (up.size / 1024).toFixed(0) + ' KB）…' + shrunk.note);
           try {
-            var buf = await f.arrayBuffer();
+            var buf = await up.arrayBuffer();
             var bytes = new Uint8Array(buf);
             var bin = '';
             var CH = 0x8000;
             for (var i = 0; i < bytes.length; i += CH) {
               bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CH));
             }
-            var ext = (f.name.split('.').pop() || 'png').toLowerCase().replace(/[^a-z0-9]/g, '');
-            var safe = f.name
+            var ext = (up.name.split('.').pop() || 'png').toLowerCase().replace(/[^a-z0-9]/g, '');
+            var safe = up.name
               .replace(/\.[^.]+$/, '')
               .replace(/[^a-zA-Z0-9\u4e00-\u9fa5-]/g, '-')
               .slice(0, 40);
@@ -1606,7 +1667,7 @@
             var r = await gh('/contents/' + path, {
               method: 'PUT',
               body: JSON.stringify({
-                message: '上传图片：' + f.name,
+                message: '上传图片：' + up.name,
                 content: bin ? btoa(bin) : '',
                 branch: BRANCH,
               }),
@@ -1617,7 +1678,6 @@
               });
               throw new Error(e.message || 'HTTP ' + r.status);
             }
-            var j = await r.json();
             var url = '/illustrations/uploads/' + path.split('/').pop();
             log('上传成功 → ' + url + '（图片会在你保存时一起提交）');
             cb(url);
