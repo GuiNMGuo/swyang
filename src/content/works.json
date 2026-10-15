@@ -1,7 +1,7 @@
 {
   "items": [
     {
-      "cover": "/illustrations/uploads/1792035597274-base-original.png",
+      "cover": "/illustrations/work1.webp",
       "title": "多角度产品图生成",
       "desc": "上传一张产品原图，自动生成白底多视图电商展示图，用于商品上架与详情页配图。",
       "tags": "图像处理, 电商",
